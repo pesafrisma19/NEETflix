@@ -12,11 +12,13 @@ export default function AuthModal({ isOpen, onClose }) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { addToast } = useToast();
+  const lastLoginMethod = localStorage.getItem('last_login_method');
 
   if (!isOpen) return null;
 
   const handleGoogleLogin = async () => {
     try {
+      localStorage.setItem('last_login_method', 'google');
       const { error } = await supabase.auth.signInWithOAuth({ 
         provider: 'google',
         options: {
@@ -36,6 +38,7 @@ export default function AuthModal({ isOpen, onClose }) {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        localStorage.setItem('last_login_method', 'email');
         addToast("Berhasil login!", "success");
         onClose();
       } else {
@@ -85,13 +88,20 @@ export default function AuthModal({ isOpen, onClose }) {
           </p>
         </div>
 
-        <button 
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 bg-white text-black py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors mb-4"
-        >
-          <FcGoogle className="text-2xl" />
-          Lanjutkan dengan Google
-        </button>
+        <div className="relative w-full mb-4">
+          {lastLoginMethod === 'google' && (
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#ffbade] text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 animate-bounce">
+              Last login
+            </div>
+          )}
+          <button 
+            onClick={handleGoogleLogin}
+            className={`w-full flex items-center justify-center gap-3 bg-white text-black py-3 rounded-xl font-bold hover:bg-gray-100 transition-colors ${lastLoginMethod === 'google' ? 'ring-2 ring-[#ffbade]' : ''}`}
+          >
+            <FcGoogle className="text-2xl" />
+            Lanjutkan dengan Google
+          </button>
+        </div>
 
         <div className="relative flex py-4 items-center">
           <div className="flex-grow border-t border-gray-600"></div>
@@ -126,13 +136,20 @@ export default function AuthModal({ isOpen, onClose }) {
             className="w-full px-4 py-3 rounded-xl bg-[#2D2B44] text-white border border-transparent focus:border-[#ffbade] focus:outline-none transition-all"
             required
           />
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-[#ffbade] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#ff99cc] transition-colors disabled:opacity-50"
-          >
-            {loading ? "Memproses..." : (isLogin ? "Login" : "Daftar Sekarang")}
-          </button>
+          <div className="relative w-full mt-2">
+            {lastLoginMethod === 'email' && isLogin && (
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#ffbade] text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 animate-bounce">
+                Last login
+              </div>
+            )}
+            <button 
+              type="submit" 
+              disabled={loading}
+              className={`w-full bg-[#ffbade] text-black font-bold py-3 rounded-xl hover:bg-[#ff99cc] transition-colors disabled:opacity-50 ${lastLoginMethod === 'email' && isLogin ? 'ring-2 ring-white/50' : ''}`}
+            >
+              {loading ? "Memproses..." : (isLogin ? "Login" : "Daftar Sekarang")}
+            </button>
+          </div>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-400">
