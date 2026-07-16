@@ -31,12 +31,17 @@ function App() {
 
   // Bersihkan hash token dari URL setelah Google Login sukses
   useEffect(() => {
+    // Tunggu sampai Supabase selesai memproses token dari URL
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && window.location.hash.includes('access_token')) {
+        // Hapus hash yang jelek tanpa me-reload halaman
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+    });
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        if (window.location.hash.includes('access_token')) {
-          // Hapus hash yang jelek tanpa me-reload halaman
-          window.history.replaceState(null, "", window.location.pathname);
-        }
+      if (event === 'SIGNED_IN' && window.location.hash.includes('access_token')) {
+        window.history.replaceState(null, "", window.location.pathname);
       }
     });
     
