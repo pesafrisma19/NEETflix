@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { useToast } from "../../context/ToastContext";
+import getAnimeInfo from "../../utils/getAnimeInfo.utils";
 
 const xpToNextLevel = (level) => {
   return level * 100; // Simple curve: level 1 needs 100, level 2 needs 200, etc.
@@ -86,6 +87,11 @@ export default function Profile() {
   const [showVipModal, setShowVipModal] = useState(false);
   const { addToast } = useToast();
 
+  const [watchlist, setWatchlist] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [koleksiLoading, setKoleksiLoading] = useState(false);
+  const [koleksiFetched, setKoleksiFetched] = useState(false);
+
   const avatarInputRef = useRef(null);
   const bannerInputRef = useRef(null);
 
@@ -120,6 +126,49 @@ export default function Profile() {
     fetchUserData();
   }, [navigate]);
 
+  useEffect(() => {
+    if (activeTab === "koleksi" && !koleksiFetched && user) {
+      const fetchKoleksi = async () => {
+        setKoleksiLoading(true);
+        try {
+          // Fetch from Supabase
+          const [favRes, histRes] = await Promise.all([
+            supabase.from('bookmarks_favorites').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+            supabase.from('watch_history').select('*').eq('user_id', user.id).order('watched_at', { ascending: false }).limit(10)
+          ]);
+
+          const favItems = favRes.data || [];
+          const histItems = histRes.data || [];
+
+          // Fetch details from AniList
+          const fetchDetails = async (items) => {
+            return Promise.all(items.map(async (item) => {
+              try {
+                const info = await getAnimeInfo(item.anime_id);
+                return { ...item, details: info?.data };
+              } catch (e) {
+                return item;
+              }
+            }));
+          };
+
+          const [favWithDetails, histWithDetails] = await Promise.all([
+            fetchDetails(favItems),
+            fetchDetails(histItems)
+          ]);
+
+          setWatchlist(favWithDetails.filter(i => i.details));
+          setHistory(histWithDetails.filter(i => i.details));
+          setKoleksiFetched(true);
+        } catch (error) {
+          console.error("Failed to fetch koleksi", error);
+        } finally {
+          setKoleksiLoading(false);
+        }
+      };
+      fetchKoleksi();
+    }
+  }, [activeTab, user, koleksiFetched]);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -411,15 +460,57 @@ export default function Profile() {
           )}
 
           {activeTab === "koleksi" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center min-h-[200px]">
-                <FontAwesomeIcon icon={faHistory} className="text-4xl text-gray-600 mb-3" />
-                <p className="text-gray-400">Riwayat tontonan kosong</p>
-              </div>
-              <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center min-h-[200px]">
-                <FontAwesomeIcon icon={faStar} className="text-4xl text-gray-600 mb-3" />
-                <p className="text-gray-400">Belum ada anime favorit</p>
-              </div>
+            <div className="space-y-8">
+              {koleksiLoading ? (
+                <div className="flex justify-center items-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ffbade]"></div></div>
+              ) : (
+                <>
+                  {/* Watch History */}
+                  <div>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faHistory} /> Terakhir Ditonton</h2>
+                    {history.length === 0 ? (
+                      <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
+                        <p className="text-gray-400">Riwayat tontonan kosong</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {history.map((item) => (
+                          <div key={`hist-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/watch/${item.anime_id}?ep=${item.episode_id}`)}>
+                            <div className="relative aspect-[3/4]">
+                              <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-xs p-1 text-center font-bold">
+                                {item.episode_id?.match(/episode-(\d+)/i)?.[1] ? `Episode ${item.episode_id.match(/episode-(\d+)/i)[1]}` : item.episode_id}
+                              </div>
+                            </div>
+                            <div className="p-2 truncate text-sm font-semibold text-center">{item.details?.title}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Watchlist */}
+                  <div>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faStar} /> Watchlist Anime</h2>
+                    {watchlist.length === 0 ? (
+                      <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
+                        <p className="text-gray-400">Belum ada anime favorit</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        {watchlist.map((item) => (
+                          <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/${item.anime_id}`)}>
+                            <div className="relative aspect-[3/4]">
+                              <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="p-2 truncate text-sm font-semibold text-center">{item.details?.title}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>

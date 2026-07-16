@@ -30,6 +30,7 @@ import website_name from "@/src/config/website";
 import getChapterStyles from "./getChapterStyle";
 import artplayerPluginHlsControl from "artplayer-plugin-hls-control";
 import artplayerPluginUploadSubtitle from "./artplayerPluginUploadSubtitle";
+import { supabase } from "@/src/lib/supabaseClient";
 
 Artplayer.LOG_VERSION = false;
 Artplayer.CONTEXTMENU = false;
@@ -81,6 +82,43 @@ export default function Player({
       setCurrentEpisodeIndex(newIndex);
     }
   }, [episodeId, episodes]);
+
+  // Save to Watch History Supabase
+  useEffect(() => {
+    const saveToWatchHistory = async () => {
+      if (!animeInfo?.id || !episodeId) return;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+
+        // Delete old history for this anime to avoid duplicates
+        await supabase
+          .from('watch_history')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('anime_id', String(animeInfo.id));
+          
+        // Insert new history
+        await supabase
+          .from('watch_history')
+          .insert({
+            user_id: session.user.id,
+            anime_id: String(animeInfo.id),
+            episode_id: String(episodeId),
+            // watched_at is auto-generated timestamptz
+          });
+      } catch (err) {
+        console.error("Failed to save watch history to DB", err);
+      }
+    };
+    
+    // Only run if it's a valid anime (wait 5 seconds to ensure they actually started watching)
+    const timer = setTimeout(() => {
+      saveToWatchHistory();
+    }, 5000);
+    
+    return () => clearTimeout(timer);
+  }, [animeInfo, episodeId]);
 
   useEffect(() => {
     const applyChapterStyles = () => {
