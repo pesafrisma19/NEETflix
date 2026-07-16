@@ -31,8 +31,8 @@ export default async function handler(req, res) {
       }
 
       // Khusus untuk "Test Webhook" dari dashboard Trakteer, seringkali tidak ada email.
-      // Kita kembalikan 200 OK agar tes berhasil di Trakteer.
-      if (!email && payload.supporter_name === "Egis") {
+      // Trakteer mengirimkan transaction_id yang diawali kata 'test-'
+      if (!email && payload.transaction_id && payload.transaction_id.startsWith('test-')) {
          return res.status(200).json({ message: 'Test Webhook Sukses! Koneksi lancar.' });
       }
 
