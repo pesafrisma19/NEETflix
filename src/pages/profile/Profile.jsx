@@ -1,0 +1,461 @@
+import { useEffect, useState, useRef } from "react";
+import { supabase } from "../../lib/supabaseClient";
+import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt } from "@fortawesome/free-solid-svg-icons";
+import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
+import { useToast } from "../../context/ToastContext";
+
+const xpToNextLevel = (level) => {
+  return level * 100; // Simple curve: level 1 needs 100, level 2 needs 200, etc.
+};
+
+// Fungsi untuk mengkonversi gambar apapun menjadi WebP dan mengompres ukurannya
+const convertToWebP = (file) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // Perkecil dimensi maksimal jika terlalu besar (misal max lebar/tinggi 1200px)
+        const MAX_SIZE = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // Convert ke WebP dengan kualitas 80%
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const webpFile = new File([blob], file.name.split('.')[0] + '.webp', {
+              type: 'image/webp',
+            });
+            resolve(webpFile);
+          } else {
+            reject(new Error('Konversi ke WebP gagal'));
+          }
+        }, 'image/webp', 0.8);
+      };
+      img.onerror = () => reject(new Error('Gagal memuat gambar'));
+      img.src = event.target.result;
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca file'));
+    reader.readAsDataURL(file);
+  });
+};
+
+const getRankTitle = (level) => {
+  if (level >= 999) return "NEETflix Lovers 👑";
+  if (level >= 800) return "Kami-sama";
+  if (level >= 500) return "Isekai Protagonist";
+  if (level >= 200) return "Hikikomori";
+  if (level >= 100) return "Weaboo";
+  if (level >= 50) return "Otaku";
+  if (level >= 30) return "Anime Fan";
+  if (level >= 10) return "Novice Watcher";
+  return "Villager";
+};
+
+export default function Profile() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [customs, setCustoms] = useState(null);
+  
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  const [editData, setEditData] = useState({
+    display_name: "",
+    bio: ""
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
+  const { addToast } = useToast();
+
+  const avatarInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/");
+        return;
+      }
+      setUser(session.user);
+
+      // Fetch profiles, stats, customizations
+      const [profRes, statsRes, custRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', session.user.id).single(),
+        supabase.from('user_stats').select('*').eq('user_id', session.user.id).single(),
+        supabase.from('user_customizations').select('*').eq('user_id', session.user.id).single()
+      ]);
+
+      if (profRes.data) {
+        setProfile(profRes.data);
+        setEditData({
+          display_name: profRes.data.display_name || profRes.data.username || "",
+          bio: profRes.data.bio || ""
+        });
+      }
+      if (statsRes.data) setStats(statsRes.data);
+      if (custRes.data) setCustoms(custRes.data);
+      setLoading(false);
+    };
+
+    fetchUserData();
+  }, [navigate]);
+
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('profiles').update({
+        display_name: editData.display_name,
+        bio: editData.bio
+      }).eq('id', user.id);
+      
+      if (error) throw error;
+      
+      setProfile({ 
+        ...profile, 
+        display_name: editData.display_name,
+        bio: editData.bio
+      });
+      addToast("Profil berhasil disimpan!", "success");
+      setActiveTab("overview");
+    } catch (err) {
+      addToast("Gagal menyimpan profil: " + err.message, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditAvatarClick = () => {
+    if (avatarInputRef.current) avatarInputRef.current.click();
+  };
+
+  const handleEditBannerClick = () => {
+    if (!profile?.is_vip) {
+      setShowVipModal(true);
+      return;
+    }
+    if (bannerInputRef.current) bannerInputRef.current.click();
+  };
+
+  const handleUploadAvatar = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Batas ukuran 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      addToast("Maaf, ukuran foto maksimal adalah 2MB!", "error");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Konversi otomatis ke WEBP
+      const webpFile = await convertToWebP(file);
+      
+      // Nama file dibuat statis berdasarkan user ID agar selalu menimpa file lama
+      const fileName = `${user.id}.webp`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, webpFile, { upsert: true }); // UPSERT: Tindih file lama!
+        
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      // Tambahkan ?v=waktu untuk memaksa browser merefresh cache gambar
+      const newUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+      setProfile({...profile, avatar_url: newUrl});
+      await supabase.from('profiles').update({ avatar_url: newUrl }).eq('id', user.id);
+      addToast("Foto profil berhasil diubah!", "success");
+    } catch (err) {
+      addToast("Gagal mengupload foto: " + err.message, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUploadBanner = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (file.size > 2 * 1024 * 1024) {
+      addToast("Maaf, ukuran banner maksimal adalah 2MB!", "error");
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      
+      // Konversi otomatis ke WEBP
+      const webpFile = await convertToWebP(file);
+      
+      // Nama file statis untuk menimpa file lama
+      const fileName = `${user.id}.webp`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('banners')
+        .upload(fileName, webpFile, { upsert: true }); // UPSERT: Tindih file lama!
+        
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('banners').getPublicUrl(fileName);
+      // Tambahkan ?v=waktu untuk memaksa browser merefresh cache gambar
+      const newUrl = `${data.publicUrl}?v=${Date.now()}`;
+
+      setProfile({...profile, banner_url: newUrl});
+      await supabase.from('profiles').update({ banner_url: newUrl }).eq('id', user.id);
+      addToast("Banner berhasil diubah!", "success");
+    } catch (err) {
+      addToast("Gagal mengupload banner: " + err.message, "error");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="min-h-screen pt-24 flex items-center justify-center text-white">Loading Profile...</div>;
+  }
+
+  const currentLevel = stats?.level || 1;
+  const currentXp = stats?.xp_total || 0;
+  const nextXp = xpToNextLevel(currentLevel);
+  const xpPercent = Math.min(100, (currentXp / nextXp) * 100);
+
+  const displayTitle = customs?.custom_title || getRankTitle(currentLevel);
+  const nameColor = customs?.name_color || "#FFFFFF";
+  const titleColor = customs?.title_color || "#ffbade";
+  const avatarUrl = profile?.avatar_url || "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg"; // Default anime blank avatar
+  const bannerUrl = profile?.banner_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2560&auto=format&fit=crop";
+
+  return (
+    <div className="min-h-screen pt-16 bg-[#161523] text-white">
+      {/* Hidden File Inputs */}
+      <input type="file" accept="image/*" ref={avatarInputRef} onChange={handleUploadAvatar} className="hidden" />
+      <input type="file" accept="image/*" ref={bannerInputRef} onChange={handleUploadBanner} className="hidden" />
+
+      {/* Banner */}
+      <div 
+        className="w-full h-64 bg-cover bg-center relative group"
+        style={{ backgroundImage: `url('${bannerUrl}')` }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-t from-[#161523] to-transparent"></div>
+        {/* Overlay Edit Banner */}
+        <div 
+          onClick={handleEditBannerClick}
+          className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer z-10"
+        >
+          <FontAwesomeIcon icon={faCamera} className="text-4xl text-white mb-2" />
+          <span className="font-bold shadow-black drop-shadow-md">Ganti Banner (VIP)</span>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 relative -mt-20 z-20">
+        <div className="flex flex-col md:flex-row gap-6 items-center md:items-end text-center md:text-left">
+          {/* Avatar */}
+          <div className="relative group cursor-pointer" onClick={handleEditAvatarClick}>
+            <img 
+              src={avatarUrl} 
+              alt="Avatar" 
+              className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#161523] object-cover bg-[#201F31]"
+            />
+            {/* Overlay Edit Avatar */}
+            <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-4 border-transparent">
+              <FontAwesomeIcon icon={faCamera} className="text-3xl text-white" />
+            </div>
+
+            {profile?.is_vip && (
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold"
+                   style={{ backgroundColor: customs?.badge_bg_color || '#6a0dad', color: customs?.badge_text_color || '#fff' }}>
+                {customs?.badge_text || "VIP"}
+              </div>
+            )}
+          </div>
+          
+          {/* Info */}
+          <div className="flex-1 pb-4">
+            <h1 className="text-3xl font-bold" style={{ color: nameColor }}>
+              {profile?.display_name || profile?.username || "Anime Fan"}
+            </h1>
+            <p className="text-lg font-semibold mt-1" style={{ color: titleColor }}>
+              {displayTitle}
+            </p>
+            <p className="text-sm text-gray-400 mt-1">@{profile?.username || "unknown"}</p>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pb-4 w-full md:w-auto mt-4 md:mt-0">
+             <button 
+               onClick={() => {
+                 const url = `${window.location.origin}/user/${profile?.username}`;
+                 navigator.clipboard.writeText(url);
+                 addToast("Link profil publik disalin!", "success");
+               }} 
+               className="px-4 py-2 bg-[#201F31] text-gray-300 hover:text-white border border-gray-700 rounded-xl font-semibold transition-colors flex-1 md:flex-none flex items-center justify-center"
+             >
+               <FontAwesomeIcon icon={faShareAlt} className="mr-2" /> 
+               Bagikan Profil
+             </button>
+
+          </div>
+        </div>
+
+        {/* Level & XP Bar */}
+        <div className="mt-8 bg-[#201F31] p-6 rounded-2xl border border-gray-800">
+          <div className="flex justify-between items-end mb-2">
+            <div>
+              <p className="text-gray-400 text-sm">Current Level</p>
+              <p className="text-2xl font-bold text-[#ffbade]">Level {currentLevel}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-gray-400 text-sm">Experience</p>
+              <p className="font-bold">{currentXp} / {nextXp} XP</p>
+            </div>
+          </div>
+          <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-[#ffbade] to-[#ff7eb3] transition-all duration-500" 
+              style={{ width: `${xpPercent}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mt-8 flex gap-2 border-b border-gray-800 overflow-x-auto custom-scrollbar">
+          {["overview", "edit", "koleksi"].map(tab => (
+            <button 
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-6 py-3 font-semibold capitalize whitespace-nowrap transition-colors ${
+                activeTab === tab ? "text-[#ffbade] border-b-2 border-[#ffbade]" : "text-gray-400 hover:text-white"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab Content */}
+        <div className="py-8 min-h-[40vh]">
+          {activeTab === "overview" && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="col-span-2 bg-[#201F31] p-6 rounded-2xl border border-gray-800">
+                <h2 className="text-xl font-bold mb-4">Bio</h2>
+                <p className="text-gray-300 leading-relaxed">
+                  {profile?.bio || "User ini belum menuliskan apapun tentang dirinya."}
+                </p>
+              </div>
+              <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800">
+                <h2 className="text-xl font-bold mb-4">Sosial Media</h2>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faDiscord} className="text-[#5865F2] text-xl w-6" />
+                    <p className="text-gray-400 text-sm flex-1">Discord: <span className="text-white font-medium">{customs?.discord_username || '-'}</span></p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faInstagram} className="text-[#E1306C] text-xl w-6" />
+                    <p className="text-gray-400 text-sm flex-1">Instagram: <span className="text-white font-medium">{customs?.instagram_username || '-'}</span></p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faTwitter} className="text-[#1DA1F2] text-xl w-6" />
+                    <p className="text-gray-400 text-sm flex-1">Twitter/X: <span className="text-white font-medium">{customs?.twitter_username || '-'}</span></p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <FontAwesomeIcon icon={faTiktok} className="text-white text-xl w-6" />
+                    <p className="text-gray-400 text-sm flex-1">TikTok: <span className="text-white font-medium">{customs?.tiktok_username || '-'}</span></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "edit" && (
+            <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 max-w-2xl mx-auto md:mx-0 text-left">
+              <h2 className="text-xl font-bold mb-6">Edit Profil</h2>
+              <form onSubmit={handleSaveProfile} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Display Name</label>
+                  <input type="text" value={editData.display_name} onChange={e => setEditData({...editData, display_name: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-[#2D2B44] text-white border border-transparent focus:border-[#ffbade] focus:outline-none transition-all" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Bio</label>
+                  <textarea value={editData.bio} onChange={e => setEditData({...editData, bio: e.target.value})} className="w-full px-4 py-3 rounded-xl bg-[#2D2B44] text-white border border-transparent focus:border-[#ffbade] focus:outline-none transition-all min-h-[100px]" placeholder="Ceritakan tentang dirimu..." />
+                </div>
+                <button type="submit" disabled={isSaving} className="w-full bg-[#ffbade] text-black font-bold py-3 rounded-xl mt-4 hover:bg-[#ff99cc] transition-colors disabled:opacity-50">
+                  {isSaving ? "Menyimpan..." : "Simpan Perubahan"}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {activeTab === "koleksi" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center min-h-[200px]">
+                <FontAwesomeIcon icon={faHistory} className="text-4xl text-gray-600 mb-3" />
+                <p className="text-gray-400">Riwayat tontonan kosong</p>
+              </div>
+              <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center min-h-[200px]">
+                <FontAwesomeIcon icon={faStar} className="text-4xl text-gray-600 mb-3" />
+                <p className="text-gray-400">Belum ada anime favorit</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Custom VIP Modal */}
+      {showVipModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#2D2B44] border border-[#ffbade] rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl transform transition-all">
+            <div className="w-16 h-16 bg-[#161523] rounded-full mx-auto flex items-center justify-center mb-4 border-2 border-[#ffbade]">
+              <FontAwesomeIcon icon={faStar} className="text-[#ffbade] text-2xl" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">Fitur Khusus VIP!</h3>
+            <p className="text-gray-300 mb-6 text-sm">
+              Maaf, fitur mengganti banner profil keren ini hanya eksklusif untuk member VIP NEETflix. Jadilah VIP sekarang!
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowVipModal(false)}
+                className="flex-1 px-4 py-3 bg-[#161523] text-gray-300 hover:text-white rounded-xl font-semibold transition-colors"
+              >
+                Tutup
+              </button>
+              <button 
+                onClick={() => {
+                  setShowVipModal(false);
+                  addToast("Sistem pembayaran VIP belum aktif.", "error");
+                }}
+                className="flex-1 px-4 py-3 bg-[#ffbade] text-black hover:bg-[#ff99cc] rounded-xl font-bold transition-colors shadow-[0_0_15px_rgba(255,186,222,0.4)]"
+              >
+                Upgrade VIP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
