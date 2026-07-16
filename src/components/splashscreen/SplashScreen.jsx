@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import getTopSearch from "@/src/utils/getTopSearch.utils";
 import formatSlug from "@/src/utils/formatSlug";
+import DonationLeaderboard from "../donations/DonationLeaderboard";
 
 // Static data moved outside the component
 const NAV_LINKS = [
@@ -179,6 +180,10 @@ function SplashScreen() {
           </div>
         </div>
       </div>
+      
+      {/* Donation Leaderboard */}
+      <DonationLeaderboard />
+
       <div className="mt-10 text-[14px] text-center pb-4">
         © {logoTitle} All rights reserved.
       </div>
