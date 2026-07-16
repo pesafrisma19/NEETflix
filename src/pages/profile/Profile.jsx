@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt, faCrown } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import getAnimeInfo from "../../utils/getAnimeInfo.utils";
@@ -355,19 +355,31 @@ export default function Profile() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pb-4 w-full md:w-auto mt-4 md:mt-0">
+          <div className="flex gap-3 pb-4 w-full md:w-auto mt-4 md:mt-0 flex-col md:flex-row">
              <button 
                onClick={() => {
                  const url = `${window.location.origin}/user/${profile?.username}`;
                  navigator.clipboard.writeText(url);
                  addToast("Link profil publik disalin!", "success");
                }} 
-               className="px-4 py-2 bg-[#201F31] text-gray-300 hover:text-white border border-gray-700 rounded-xl font-semibold transition-colors flex-1 md:flex-none flex items-center justify-center"
+               className="px-4 py-2 bg-[#201F31] text-gray-300 hover:text-white border border-gray-700 rounded-xl font-semibold transition-colors flex items-center justify-center"
              >
                <FontAwesomeIcon icon={faShareAlt} className="mr-2" /> 
                Bagikan Profil
              </button>
-
+             
+             {/* Upgrade VIP Button */}
+             {!profile?.is_vip && (
+               <a 
+                 href="https://trakteer.id/NEETflix/gift" 
+                 target="_blank" 
+                 rel="noreferrer"
+                 className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500 border border-yellow-400 rounded-xl font-bold transition-all shadow-[0_0_10px_rgba(250,204,21,0.3)] flex items-center justify-center"
+               >
+                 <FontAwesomeIcon icon={faCrown} className="mr-2" /> 
+                 Upgrade VIP
+               </a>
+             )}
           </div>
         </div>
 
