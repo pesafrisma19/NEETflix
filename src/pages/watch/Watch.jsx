@@ -303,7 +303,11 @@ export default function Watch() {
               <div className="player w-full h-fit bg-black flex flex-col">
                 <div className="w-full relative h-[480px] max-[1400px]:h-[40vw] max-[1200px]:h-[48vw] max-[1024px]:h-[58vw] max-[600px]:h-[65vw]">
                   {!buffering ? (
-                    streamInfo?.streamingLink?.link?.isIframe ? (
+                    !streamUrl ? (
+                      <div className="absolute inset-0 flex justify-center items-center bg-black">
+                        <p className="text-white text-lg">⚠️ Video tidak ditemukan atau server sedang gangguan.</p>
+                      </div>
+                    ) : streamInfo?.streamingLink?.link?.isIframe ? (
                       <iframe 
                         src={streamUrl} 
                         className="w-full h-full border-none" 
