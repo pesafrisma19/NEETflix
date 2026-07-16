@@ -85,6 +85,7 @@ export default function Profile() {
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showVipModal, setShowVipModal] = useState(false);
+  const [showTrakteerWarning, setShowTrakteerWarning] = useState(false);
   const { addToast } = useToast();
 
   const [watchlist, setWatchlist] = useState([]);
@@ -370,15 +371,13 @@ export default function Profile() {
              
              {/* Upgrade VIP Button */}
              {!profile?.is_vip && (
-               <a 
-                 href="https://trakteer.id/NEETflix/rewards" 
-                 target="_blank" 
-                 rel="noreferrer"
+               <button 
+                 onClick={() => setShowTrakteerWarning(true)}
                  className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500 border border-yellow-400 rounded-xl font-bold transition-all shadow-[0_0_10px_rgba(250,204,21,0.3)] flex items-center justify-center"
                >
                  <FontAwesomeIcon icon={faCrown} className="mr-2" /> 
                  Upgrade VIP
-               </a>
+               </button>
              )}
           </div>
         </div>
@@ -559,6 +558,48 @@ export default function Profile() {
           </div>
         </div>
       )}
+      {/* Trakteer Warning Modal */}
+      {showTrakteerWarning && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1A1A24] p-6 rounded-2xl w-full max-w-md border border-yellow-500/30 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-yellow-400 flex items-center gap-2">
+                <FontAwesomeIcon icon={faCrown} /> Perhatian!
+              </h3>
+            </div>
+            <div className="text-gray-300 space-y-4 text-sm leading-relaxed mb-6 bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20">
+              <p>
+                Anda akan dialihkan ke halaman Trakteer. Agar sistem otomatis mendeteksi pembayaran Anda, mohon pastikan:
+              </p>
+              <ul className="list-disc pl-5 space-y-2 font-medium text-white">
+                <li>Gunakan email yang <strong>SAMA</strong> dengan akun Anda saat ini: <br/><span className="text-yellow-400 break-all">{user?.email}</span></li>
+                <li>Wajib mencentang kotak <strong>"Tampilkan email saya"</strong> saat melakukan pembayaran di Trakteer.</li>
+              </ul>
+              <p className="text-gray-400 mt-2">
+                Jika email berbeda atau disembunyikan, status VIP tidak akan masuk secara otomatis.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button 
+                onClick={() => setShowTrakteerWarning(false)}
+                className="flex-1 py-3 bg-[#2B2A3C] hover:bg-[#3d3c52] text-white rounded-xl font-bold transition-colors"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => {
+                  setShowTrakteerWarning(false);
+                  window.open("https://trakteer.id/NEETflix/rewards", "_blank");
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-white rounded-xl font-bold transition-all"
+              >
+                Lanjut
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
