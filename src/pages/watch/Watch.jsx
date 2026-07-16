@@ -303,7 +303,7 @@ export default function Watch() {
               <div className="player w-full h-fit bg-black flex flex-col">
                 <div className="w-full relative h-[480px] max-[1400px]:h-[40vw] max-[1200px]:h-[48vw] max-[1024px]:h-[58vw] max-[600px]:h-[65vw]">
                   {!buffering ? (
-                    streamInfo?.sources?.[0]?.isIframe ? (
+                    streamInfo?.streamingLink?.link?.isIframe ? (
                       <iframe 
                         src={streamUrl} 
                         className="w-full h-full border-none" 

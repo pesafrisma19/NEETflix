@@ -54,14 +54,16 @@ export default async function getStreamInfo(animeTitle, episodeNumber, episodeSl
        }
     }
 
-    // 2. Jika gagal diekstrak, fallback pakai iframeUrl (akan menyebabkan error di Artplayer kalau tidak ditangani, tapi minimal ada data)
+    let isIframe = false;
+    // 2. Jika gagal diekstrak, fallback pakai iframeUrl
     if (!videoUrl) {
        videoUrl = iframeUrl;
+       isIframe = true;
     }
 
     return {
       streamingLink: {
-        link: { file: videoUrl },
+        link: { file: videoUrl, isIframe },
         tracks: [], // Otakudesu biasanya hardsub, jadi tidak ada track subtitle terpisah
         intro: null,
         outro: null
