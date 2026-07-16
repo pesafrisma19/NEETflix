@@ -5,6 +5,10 @@
       "destination": "https://api.trakteer.id/v1/public/:match*"
     },
     {
+      "source": "/api/proxy",
+      "destination": "/api/proxy.js"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

@@ -22,7 +22,7 @@ export default async function getStreamInfo(animeTitle, episodeNumber, episodeSl
     if (iframeUrl && iframeUrl.includes("desustream")) {
        try {
          console.log("Mencoba mengekstrak Desustream iframe...");
-         const corsProxy = "https://corsproxy.io/?";
+         const corsProxy = "/api/proxy?url=";
          const htmlResp = await axios.get(corsProxy + encodeURIComponent(iframeUrl));
          const htmlContent = typeof htmlResp.data === "string" ? htmlResp.data : JSON.stringify(htmlResp.data);
          
