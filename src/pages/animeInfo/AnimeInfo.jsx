@@ -121,11 +121,21 @@ function AnimeInfo({ random = false }) {
   const checkWatchlist = async (userId) => {
     if (!id || id === "404-not-found-page") return;
     try {
-      const { data } = await supabase.from('user_stats').select('favorites').eq('user_id', userId).single();
-      if (data && data.favorites) {
-        setIsInWatchlist(data.favorites.some(item => String(item.id) === String(id)));
+      const { data, error } = await supabase
+        .from('bookmarks_favorites')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('anime_id', String(id))
+        .single();
+        
+      if (data) {
+        setIsInWatchlist(true);
+      } else {
+        setIsInWatchlist(false);
       }
-    } catch (err) {}
+    } catch (err) {
+      // PGRST116 means zero rows, which is normal if not in watchlist
+    }
   };
 
   const handleWatchlistToggle = async () => {
@@ -137,32 +147,34 @@ function AnimeInfo({ random = false }) {
     
     setIsWatchlistLoading(true);
     try {
-      const { data: currentStats, error: getError } = await supabase.from('user_stats').select('*').eq('user_id', user.id).single();
-      let currentFavorites = currentStats?.favorites || [];
-      
       if (isInWatchlist) {
-        currentFavorites = currentFavorites.filter(item => String(item.id) !== String(id));
+        // Delete from watchlist
+        const { error } = await supabase
+          .from('bookmarks_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('anime_id', String(id));
+          
+        if (error) throw error;
         setIsInWatchlist(false);
         addToast("Berhasil dihapus dari Watchlist!", "success");
       } else {
-        currentFavorites = [{
-          id: String(id),
-          title: animeInfo.title,
-          japanese_title: animeInfo.japanese_title,
-          poster: animeInfo.poster,
-          tvInfo: animeInfo.animeInfo?.tvInfo
-        }, ...currentFavorites];
+        // Add to watchlist
+        const { error } = await supabase
+          .from('bookmarks_favorites')
+          .insert({ 
+            user_id: user.id, 
+            anime_id: String(id),
+            type: 'anime'
+          });
+          
+        if (error) throw error;
         setIsInWatchlist(true);
         addToast("Berhasil ditambahkan ke Watchlist!", "success");
       }
-      
-      if (getError && getError.code === 'PGRST116') {
-        await supabase.from('user_stats').insert({ user_id: user.id, favorites: currentFavorites });
-      } else {
-        await supabase.from('user_stats').update({ favorites: currentFavorites }).eq('user_id', user.id);
-      }
     } catch (err) {
       addToast("Gagal mengupdate Watchlist!", "error");
+      console.error(err);
     } finally {
       setIsWatchlistLoading(false);
     }
