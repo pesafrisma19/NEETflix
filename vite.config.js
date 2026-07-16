@@ -9,4 +9,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./"),
     },
   },
+  server: {
+    proxy: {
+      '/api/trakteer': {
+        target: 'https://api.trakteer.id/v1/public',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/trakteer/, ''),
+      },
+    },
+  },
 })

@@ -21,7 +21,7 @@ export default function DonationLeaderboard() {
           return;
         }
 
-        const response = await fetch('https://api.trakteer.id/v1/public/supports', {
+        const response = await fetch('/api/trakteer/supports', {
           headers: {
             'key': apiKey,
             'Accept': 'application/json',
