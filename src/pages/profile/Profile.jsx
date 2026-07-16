@@ -572,11 +572,11 @@ export default function Profile() {
                 Anda akan dialihkan ke halaman Trakteer. Agar sistem otomatis mendeteksi pembayaran Anda, mohon pastikan:
               </p>
               <ul className="list-disc pl-5 space-y-2 font-medium text-white">
-                <li>Gunakan email yang <strong>SAMA</strong> dengan akun Anda saat ini: <br/><span className="text-yellow-400 break-all">{user?.email}</span></li>
-                <li>Wajib mencentang kotak <strong>"Tampilkan email saya"</strong> saat melakukan pembayaran di Trakteer.</li>
+                <li>Anda <strong>WAJIB</strong> menuliskan email Anda di dalam kolom <strong>"Pesan Dukungan"</strong> saat membayar.</li>
+                <li>Gunakan email yang <strong>SAMA</strong> dengan akun Anda saat ini: <br/><span className="text-yellow-400 break-all bg-black/50 px-2 py-1 rounded select-all mt-1 inline-block">{user?.email}</span></li>
               </ul>
               <p className="text-gray-400 mt-2">
-                Jika email berbeda atau disembunyikan, status VIP tidak akan masuk secara otomatis.
+                Jika Anda tidak menuliskan email di dalam kotak pesan, sistem kami tidak akan bisa mengenali pembayaran Anda dan status VIP tidak akan masuk otomatis.
               </p>
             </div>
             <div className="flex gap-3 mt-6">

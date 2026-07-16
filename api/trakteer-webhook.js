@@ -16,6 +16,7 @@ export default async function handler(req, res) {
 
   try {
     const payload = req.body;
+    console.log("Trakteer Webhook Payload:", JSON.stringify(payload));
     
     // Trakteer mengirimkan tipe event. Kita akan proses event 'tip'
     if (payload.type === 'tip') {
