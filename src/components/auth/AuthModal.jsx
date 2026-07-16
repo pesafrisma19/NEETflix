@@ -17,7 +17,12 @@ export default function AuthModal({ isOpen, onClose }) {
 
   const handleGoogleLogin = async () => {
     try {
-      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      const { error } = await supabase.auth.signInWithOAuth({ 
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}${window.location.pathname}`
+        }
+      });
       if (error) throw error;
     } catch (error) {
       addToast(error.message, "error");

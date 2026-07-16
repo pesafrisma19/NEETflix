@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
+import { supabase } from "./lib/supabaseClient";
 import { Routes, Route } from "react-router-dom";
 import { HomeInfoProvider } from "./context/HomeInfoContext";
 import Home from "./pages/Home/Home";
@@ -27,6 +28,22 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location]);
+
+  // Bersihkan hash token dari URL setelah Google Login sukses
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        if (window.location.hash.includes('access_token')) {
+          // Hapus hash yang jelek tanpa me-reload halaman
+          window.history.replaceState(null, "", window.location.pathname);
+        }
+      }
+    });
+    
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Check if the current route is for the splash screen
   const isSplashScreen = location.pathname === "/";
