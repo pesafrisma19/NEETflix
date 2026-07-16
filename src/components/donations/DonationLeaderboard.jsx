@@ -7,9 +7,9 @@ export default function DonationLeaderboard() {
   const [totalAmount, setTotalAmount] = useState(0);
   const [topDonors, setTopDonors] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const targetAmount = 200000;
-  const trakteerLink = "https://trakteer.id/NEETflix/rewards";
+  const trakteerLink = "https://trakteer.id/NEETflix/gift";
 
   useEffect(() => {
     const fetchTrakteerData = async () => {
@@ -30,11 +30,11 @@ export default function DonationLeaderboard() {
         });
 
         const data = await response.json();
-        
+
         if (data.status === 'success' && data.result.data) {
           const supportData = data.result.data;
           setSupports(supportData);
-          
+
           // Calculate total
           const total = supportData.reduce((acc, curr) => acc + (curr.amount || 0), 0);
           setTotalAmount(total);
@@ -53,7 +53,7 @@ export default function DonationLeaderboard() {
             .map(([name, amount]) => ({ name, amount }))
             .sort((a, b) => b.amount - a.amount)
             .slice(0, 3);
-            
+
           setTopDonors(sortedTop);
         }
       } catch (error) {
@@ -84,9 +84,9 @@ export default function DonationLeaderboard() {
               Trakteer kami untuk biaya server agar NEETflix tetap hidup tanpa iklan yang mengganggu!
             </p>
           </div>
-          <a 
-            href={trakteerLink} 
-            target="_blank" 
+          <a
+            href={trakteerLink}
+            target="_blank"
             rel="noreferrer"
             className="bg-[#C13222] hover:bg-[#a62b1d] text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shrink-0"
           >
@@ -102,8 +102,8 @@ export default function DonationLeaderboard() {
             <span className="text-gray-500">Target: {formatRupiah(targetAmount)}</span>
           </div>
           <div className="w-full bg-gray-800 rounded-full h-3 mb-2 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-[#ffbade] to-[#ff99cc] h-3 rounded-full transition-all duration-1000 ease-out" 
+            <div
+              className="bg-gradient-to-r from-[#ffbade] to-[#ff99cc] h-3 rounded-full transition-all duration-1000 ease-out"
               style={{ width: `${progressPercentage}%` }}
             ></div>
           </div>
@@ -118,7 +118,7 @@ export default function DonationLeaderboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            
+
             {/* Top Donors */}
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2 mb-6">
@@ -129,9 +129,9 @@ export default function DonationLeaderboard() {
                 {/* Rank 2 */}
                 {topDonors[1] && (
                   <div className="flex flex-col items-center animate-in slide-in-from-bottom-4 duration-500 delay-100">
-                    <img 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[1].name}&backgroundColor=2B2A3C`} 
-                      alt="avatar" 
+                    <img
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[1].name}&backgroundColor=2B2A3C`}
+                      alt="avatar"
                       className="w-16 h-16 rounded-full border-4 border-gray-500 bg-[#2B2A3C]"
                     />
                     <div className="bg-[#2B2A3C] w-24 h-24 mt-2 rounded-t-xl flex flex-col items-center justify-start pt-3 border-t-4 border-gray-500">
@@ -146,9 +146,9 @@ export default function DonationLeaderboard() {
                 {topDonors[0] && (
                   <div className="flex flex-col items-center z-10 animate-in slide-in-from-bottom-8 duration-500">
                     <FontAwesomeIcon icon={faCrown} className="text-yellow-400 text-2xl mb-1 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)]" />
-                    <img 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[0].name}&backgroundColor=2B2A3C`} 
-                      alt="avatar" 
+                    <img
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[0].name}&backgroundColor=2B2A3C`}
+                      alt="avatar"
                       className="w-20 h-20 rounded-full border-4 border-yellow-400 bg-[#2B2A3C] shadow-[0_0_15px_rgba(250,204,21,0.3)]"
                     />
                     <div className="bg-[#2B2A3C] w-28 h-32 mt-2 rounded-t-xl flex flex-col items-center justify-start pt-3 border-t-4 border-yellow-400 shadow-xl">
@@ -162,9 +162,9 @@ export default function DonationLeaderboard() {
                 {/* Rank 3 */}
                 {topDonors[2] && (
                   <div className="flex flex-col items-center animate-in slide-in-from-bottom-2 duration-500 delay-200">
-                    <img 
-                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[2].name}&backgroundColor=2B2A3C`} 
-                      alt="avatar" 
+                    <img
+                      src={`https://api.dicebear.com/7.x/notionists/svg?seed=${topDonors[2].name}&backgroundColor=2B2A3C`}
+                      alt="avatar"
                       className="w-14 h-14 rounded-full border-4 border-[#cd7f32] bg-[#2B2A3C]"
                     />
                     <div className="bg-[#2B2A3C] w-24 h-20 mt-2 rounded-t-xl flex flex-col items-center justify-start pt-3 border-t-4 border-[#cd7f32]">
@@ -195,9 +195,9 @@ export default function DonationLeaderboard() {
                   <div className="flex flex-col gap-2">
                     {supports.slice(0, 10).map((support, index) => (
                       <div key={index} className="bg-[#1A1A24] p-3 rounded-xl flex items-center gap-3">
-                        <img 
-                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${support.supporter_name || 'Seseorang'}&backgroundColor=ffbade`} 
-                          alt="avatar" 
+                        <img
+                          src={`https://api.dicebear.com/7.x/notionists/svg?seed=${support.supporter_name || 'Seseorang'}&backgroundColor=ffbade`}
+                          alt="avatar"
                           className="w-10 h-10 rounded-full shrink-0"
                         />
                         <div className="flex-grow min-w-0">
