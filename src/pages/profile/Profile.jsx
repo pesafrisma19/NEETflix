@@ -371,7 +371,7 @@ export default function Profile() {
              {/* Upgrade VIP Button */}
              {!profile?.is_vip && (
                <a 
-                 href="https://trakteer.id/NEETflix/gift" 
+                 href="https://trakteer.id/NEETflix/rewards" 
                  target="_blank" 
                  rel="noreferrer"
                  className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white hover:from-yellow-400 hover:to-yellow-500 border border-yellow-400 rounded-xl font-bold transition-all shadow-[0_0_10px_rgba(250,204,21,0.3)] flex items-center justify-center"

@@ -9,7 +9,7 @@ export default function DonationLeaderboard() {
   const [loading, setLoading] = useState(true);
   
   const targetAmount = 200000;
-  const trakteerLink = "https://trakteer.id/NEETflix/gift";
+  const trakteerLink = "https://trakteer.id/NEETflix/rewards";
 
   useEffect(() => {
     const fetchTrakteerData = async () => {
