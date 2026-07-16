@@ -126,7 +126,7 @@ function AnimeInfo({ random = false }) {
         .select('*')
         .eq('user_id', userId)
         .eq('anime_id', String(id))
-        .single();
+        .maybeSingle();
         
       if (data) {
         setIsInWatchlist(true);
