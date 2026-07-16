@@ -165,7 +165,7 @@ function AnimeInfo({ random = false }) {
           .insert({ 
             user_id: user.id, 
             anime_id: String(id),
-            type: 'anime'
+            type: 'bookmark'
           });
           
         if (error) throw error;
