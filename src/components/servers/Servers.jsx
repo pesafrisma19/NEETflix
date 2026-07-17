@@ -22,6 +22,10 @@ function Servers({
   const alServers  = servers?.filter((s) => s.source === "AnimeLovers") || [];
 
   useEffect(() => {
+    // Jangan override jika sedang memutar quality stream (STREAM- prefix)
+    // Ini mencegah highlight quality hilang saat servers diupdate dengan quality list baru
+    if (activeServerId?.startsWith("STREAM-")) return;
+
     const savedServerName = localStorage.getItem("server_name");
 
     if (savedServerName) {

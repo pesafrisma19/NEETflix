@@ -277,6 +277,19 @@ export const useWatch = (animeId, initialEpisodeId) => {
             // Gabungkan sumber utama (AL, OD) dengan pilihan kualitas
             const baseServers = servers.filter(s => !s.data_id.startsWith("STREAM-")); 
             setServers([...baseServers, ...qualityServers]);
+
+            // Auto-highlight quality pertama yang sedang diputar
+            // Prefer 720p → 480p → fallback ke yang pertama tersedia
+            const preferredOrder = ["720p", "480p", "360p", "1080p"];
+            const defaultQuality =
+              preferredOrder.reduce((found, q) =>
+                found || qualityServers.find(s => s.serverName.endsWith(q)),
+                null
+              ) || qualityServers[0];
+            if (defaultQuality) {
+              setActiveServerId(defaultQuality.data_id);
+              setStreamUrl(defaultQuality.data_id.split("|")[1]);
+            }
           }
         } else {
           setError("No server found with the activeServerId.");
