@@ -70,7 +70,7 @@ export default function Player({
   const prevEpisodeIdRef = useRef(null); // deteksi episode berubah vs ganti kualitas
   const leftAtRef = useRef(0);
   const boundKeydownRef = useRef(null);
-  const proxy = import.meta.env.VITE_PROXY_URL;
+  const proxy = import.meta.env.VITE_PROXY_URL || "";
   const m3u8proxy = import.meta.env.VITE_M3U8_PROXY_URL?.split(",") || [];
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(
     episodes?.findIndex((episode) => episode.id.match(/ep=(\d+)/)?.[1] === episodeId)
