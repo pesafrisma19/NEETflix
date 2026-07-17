@@ -15,9 +15,11 @@ function Servers({
   setActiveServerId,
   serverLoading,
 }) {
-  const subServers = servers?.filter((server) => server.type === "sub") || [];
-  const dubServers = servers?.filter((server) => server.type === "dub") || [];
-  const rawServers = servers?.filter((server) => server.type === "raw") || [];
+  const subServers = servers?.filter((s) => s.type === "sub" && !s.source) || [];
+  const dubServers = servers?.filter((s) => s.type === "dub" && !s.source) || [];
+  const rawServers = servers?.filter((s) => s.type === "raw" && !s.source) || [];
+  const qualityServers = servers?.filter(s => s.source === "Quality") || [];
+  const alServers  = servers?.filter((s) => s.source === "AnimeLovers") || [];
 
   useEffect(() => {
     const savedServerName = localStorage.getItem("server_name");
@@ -40,7 +42,9 @@ function Servers({
   const handleServerSelect = (server) => {
     setActiveServerId(server.data_id);
     localStorage.setItem("server_name", server.serverName);
-    localStorage.setItem("server_type", server.type);
+    if (server.type) {
+      localStorage.setItem("server_type", server.type);
+    }
   };
   return (
     <div className="relative bg-[#11101A] p-4 w-full min-h-[100px] flex justify-center items-center max-[1200px]:bg-[#14151A]">
@@ -98,52 +102,51 @@ function Servers({
               </div>
             )}
             {subServers.length > 0 && (
-              <div
-                className={`servers px-2 flex items-center flex-wrap ml-2 max-[600px]:py-2 ${
-                  dubServers.length === 0 ? "h-1/2" : "h-full"
-                }`}
-              >
+              <div className="servers px-2 py-3 flex items-center flex-wrap ml-2 max-[600px]:py-2">
                 <div className="flex items-center gap-x-2">
                   <FontAwesomeIcon
                     icon={faClosedCaptioning}
                     className="text-[#ffbade] text-[13px]"
                   />
-                  <p className="font-bold text-[14px]">SUB:</p>
+                  <p className="font-bold text-[14px]">SOURCE:</p>
                 </div>
                 <div className="flex gap-x-[7px] ml-8 flex-wrap">
-                  {subServers.map((item, index) => (
-                    <div
-                      key={index}
-                      className={`px-6 py-[5px] rounded-lg cursor-pointer ${
-                        activeServerId === item?.data_id
-                          ? "bg-[#ffbade] text-black"
-                          : "bg-[#373646] text-white"
-                      } max-[700px]:px-3`}
-                      onClick={() => handleServerSelect(item)}
-                    >
-                      <p className="text-[13px] font-semibold">
-                        {item.serverName}
-                      </p>
-                    </div>
-                  ))}
+                  {subServers.map((item, index) => {
+                    // AL tetap pink jika sedang putar quality AL (activeServerId starts with AL|)
+                    const isSourceActive =
+                      activeServerId === item?.data_id ||
+                      (item.data_id === "source-AL" && activeServerId?.startsWith("STREAM-AL")) ||
+                      (item.data_id === "source-OD" && activeServerId?.startsWith("STREAM-OD"));
+                    return (
+                      <div
+                        key={index}
+                        className={`px-6 py-[5px] rounded-lg cursor-pointer ${
+                          isSourceActive
+                            ? "bg-[#ffbade] text-black"
+                            : "bg-[#373646] text-white"
+                        } max-[700px]:px-3`}
+                        onClick={() => handleServerSelect(item)}
+                      >
+                        <p className="text-[13px] font-semibold">
+                          {item.serverName}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
-            {dubServers.length > 0 && (
-              <div
-                className={`servers px-2 flex items-center flex-wrap ml-2 max-[600px]:py-2 ${
-                  subServers.length === 0 ? "h-1/2 " : "h-full"
-                }`}
-              >
+            {qualityServers.length > 0 && (
+              <div className="servers px-2 py-3 flex items-center flex-wrap ml-2 max-[600px]:py-2 border-t border-[#2e2d42]">
                 <div className="flex items-center gap-x-3">
                   <FontAwesomeIcon
-                    icon={faMicrophone}
+                    icon={faFile}
                     className="text-[#ffbade] text-[13px]"
                   />
-                  <p className="font-bold text-[14px]">DUB:</p>
+                  <p className="font-bold text-[14px]">QUALITY:</p>
                 </div>
                 <div className="flex gap-x-[7px] ml-8 flex-wrap">
-                  {dubServers.map((item, index) => (
+                  {qualityServers.map((item, index) => (
                     <div
                       key={index}
                       className={`px-6 py-[5px] rounded-lg cursor-pointer ${
@@ -154,7 +157,7 @@ function Servers({
                       onClick={() => handleServerSelect(item)}
                     >
                       <p className="text-[13px] font-semibold">
-                        {item.serverName}
+                        {item.serverName.replace(/^AL\s*/i, "")}
                       </p>
                     </div>
                   ))}

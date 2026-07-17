@@ -27,18 +27,17 @@ import useWatchControl from "@/src/hooks/useWatchControl";
 import { FaWhatsapp, FaLink } from "react-icons/fa";
 
 function Tag({ bgColor, index, icon, text }) {
-    return (
-      <div
-        className={`flex space-x-1 justify-center items-center px-[4px] py-[1px] text-black font-semibold text-[13px] ${
-          index === 0 ? "rounded-l-[4px]" : "rounded-none"
+  return (
+    <div
+      className={`flex space-x-1 justify-center items-center px-[4px] py-[1px] text-black font-semibold text-[13px] ${index === 0 ? "rounded-l-[4px]" : "rounded-none"
         }`}
-        style={{ backgroundColor: bgColor }}
-      >
-        {icon && <FontAwesomeIcon icon={icon} className="text-[12px]" />}
-        <p className="text-[12px]">{text}</p>
-      </div>
-    );
-  }
+      style={{ backgroundColor: bgColor }}
+    >
+      {icon && <FontAwesomeIcon icon={icon} className="text-[12px]" />}
+      <p className="text-[12px]">{text}</p>
+    </div>
+  );
+}
 
 
 export default function Watch() {
@@ -90,12 +89,12 @@ export default function Watch() {
 
   useEffect(() => {
     if (!episodes || episodes.length === 0) return;
-    
+
     const isValidEpisode = episodes.some(ep => {
       const epNumber = ep.id.split('ep=')[1];
-      return epNumber === String(episodeId); 
+      return epNumber === String(episodeId);
     });
-    
+
     // If missing or invalid episodeId, fallback to first
     if (!episodeId || !isValidEpisode) {
       const fallbackId = episodes[0].id.match(/ep=(\d+)/)?.[1];
@@ -104,7 +103,7 @@ export default function Watch() {
       }
       return;
     }
-  
+
     const newUrl = `/watch/${paramSlug}?ep=${episodeId}`;
     if (isFirstSet.current) {
       navigate(newUrl, { replace: true });
@@ -112,7 +111,7 @@ export default function Watch() {
     } else {
       navigate(newUrl);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodeId, paramSlug, navigate, episodes]);
 
   // Update document title
@@ -135,11 +134,12 @@ export default function Watch() {
   }, [activeEpisodeNum]);
 
   // Redirect if no episodes
-  useEffect(() => {
-    if (totalEpisodes !== null && totalEpisodes === 0) {
-      navigate(`/${formatSlug(animeInfo?.title || animeInfo?.japanese_title, animeId)}`);
-    }
-  }, [streamInfo, episodeId, animeId, totalEpisodes, navigate]);
+  // Dihapus agar user tidak dipaksa kembali ke infoanime dan tetap bisa memilih server/sumber lain
+  // useEffect(() => {
+  //   if (totalEpisodes !== null && totalEpisodes === 0) {
+  //     navigate(`/${formatSlug(animeInfo?.title || animeInfo?.japanese_title, animeId)}`);
+  //   }
+  // }, [streamInfo, episodeId, animeId, totalEpisodes, navigate]);
 
   // useEffect(() => {
   //   const adjustHeight = () => {
@@ -300,63 +300,49 @@ export default function Watch() {
                 />
               )}
             </div>
-              <div className="player w-full h-fit bg-black flex flex-col">
-                <div className="w-full relative h-[480px] max-[1400px]:h-[40vw] max-[1200px]:h-[48vw] max-[1024px]:h-[58vw] max-[600px]:h-[65vw]">
-                  {!buffering ? (
-                    !streamUrl ? (
-                      <div className="absolute inset-0 flex justify-center items-center bg-black">
-                        <p className="text-white text-lg">⚠️ Video tidak ditemukan atau server sedang gangguan.</p>
-                      </div>
-                    ) : streamInfo?.streamingLink?.link?.isIframe ? (
-                      <iframe 
-                        src={streamUrl} 
-                        className="w-full h-full border-none" 
-                        allowFullScreen 
-                        scrolling="no"
-                        title="Video Player"
-                      />
-                    ) : (
-                      <Player
-                        streamUrl={streamUrl}
-                        subtitles={subtitles}
-                        intro={intro}
-                        outro={outro}
-                        thumbnail={thumbnail}
-                        poster={poster}
-                        autoSkipIntro={autoSkipIntro}
-                        autoPlay={autoPlay}
-                        autoNext={autoNext}
-                        episodeId={episodeId}
-                        episodes={episodes}
-                        playNext={(id) => setEpisodeId(id)}
-                        animeInfo={animeInfo}
-                        episodeNum={activeEpisodeNum}
-                        streamInfo={streamInfo}
-                      />
-                    )
-                  ) : (
-                    <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
-                      <BouncingLoader />
-                    </div>
-                  )}
-                <p className="text-center underline font-medium text-[15px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                  {!buffering && !streamInfo ? (
-                    servers ? (
-                      <>
-                        Probably this server is down, try other servers
-                        <br />
-                        Either reload or try again after sometime
-                      </>
-                    ) : (
-                      <>
-                        Probably streaming server is down
-                        <br />
-                        Either reload or try again after sometime
-                      </>
-                    )
-                  ) : null}
-                </p>
+            <div className="player w-full h-fit bg-black flex flex-col">
+              <div className="w-full relative h-[480px] max-[1400px]:h-[40vw] max-[1200px]:h-[48vw] max-[1024px]:h-[58vw] max-[600px]:h-[65vw]">
+                {!buffering ? (
+                  <Player
+                    streamUrl={streamUrl}
+                    subtitles={subtitles}
+                    intro={intro}
+                    outro={outro}
+                    thumbnail={thumbnail}
+                    poster={poster}
+                    autoSkipIntro={autoSkipIntro}
+                    autoPlay={autoPlay}
+                    autoNext={autoNext}
+                    episodeId={episodeId}
+                    episodes={episodes}
+                    playNext={(id) => setEpisodeId(id)}
+                    animeInfo={animeInfo}
+                    episodeNum={activeEpisodeNum}
+                    streamInfo={streamInfo}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex justify-center items-center bg-black bg-opacity-50">
+                    <BouncingLoader />
+                  </div>
+                )}
               </div>
+              <p className="text-center underline font-medium text-[15px] absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                {!buffering && !streamInfo ? (
+                  servers ? (
+                    <>
+                      Probably this server is down, try other servers
+                      <br />
+                      Either reload or try again after sometime
+                    </>
+                  ) : (
+                    <>
+                      Probably streaming server is down
+                      <br />
+                      Either reload or try again after sometime
+                    </>
+                  )
+                ) : null}
+              </p>
 
               {/* TMDB Episode Details Section */}
               {!buffering && episodes && activeEpisodeNum && (
@@ -418,18 +404,16 @@ export default function Watch() {
                       <Link
                         to={`/${formatSlug(season?.season, season?.id)}`}
                         key={index}
-                        className={`relative w-[20%] h-[60px] rounded-lg overflow-hidden cursor-pointer group ${
-                          animeId === String(season.id)
-                            ? "border border-[#ffbade]"
-                            : ""
-                        } max-[1200px]:w-[140px] max-[575px]:w-full`}
+                        className={`relative w-[20%] h-[60px] rounded-lg overflow-hidden cursor-pointer group ${animeId === String(season.id)
+                          ? "border border-[#ffbade]"
+                          : ""
+                          } max-[1200px]:w-[140px] max-[575px]:w-full`}
                       >
                         <p
-                          className={`text-[13px] text-center font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full px-2 z-30 line-clamp-2 group-hover:text-[#ffbade] ${
-                            animeId === String(season.id)
-                              ? "text-[#ffbade]"
-                              : "text-white"
-                          }`}
+                          className={`text-[13px] text-center font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full px-2 z-30 line-clamp-2 group-hover:text-[#ffbade] ${animeId === String(season.id)
+                            ? "text-[#ffbade]"
+                            : "text-white"
+                            }`}
                         >
                           {season.season}
                         </p>
@@ -456,7 +440,7 @@ export default function Watch() {
                             new Date(
                               nextEpisodeSchedule.nextEpisodeSchedule
                             ).getTime() -
-                              new Date().getTimezoneOffset() * 60000
+                            new Date().getTimezoneOffset() * 60000
                           ).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "2-digit",
@@ -542,9 +526,9 @@ export default function Watch() {
                             {isFullOverview
                               ? animeInfo?.animeInfo?.Overview
                               : `${animeInfo?.animeInfo?.Overview.slice(
-                                  0,
-                                  270
-                                )}...`}
+                                0,
+                                270
+                              )}...`}
                             <span
                               className="text-[13px] font-bold hover:cursor-pointer"
                               onClick={() => setIsFullOverview(!isFullOverview)}
@@ -601,13 +585,13 @@ export default function Watch() {
           </div>
         </div>
         <div className="flex gap-x-2 items-center">
-          <button 
+          <button
             onClick={() => navigator.clipboard.writeText(window.location.href)}
             className="bg-[#2A2A38] text-white px-3 py-1.5 rounded-lg flex gap-x-1.5 items-center text-[12px] font-semibold hover:bg-[#ffbade] hover:text-[#191826] transition-all shadow-md"
           >
             <FaLink /> Copy
           </button>
-          <button 
+          <button
             onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`Yuk nonton ${animeInfo?.title || animeInfo?.japanese_title || 'Anime Keren'} di NEETflix! Langsung klik: ${window.location.href}`)}`, "_blank")}
             className="bg-[#25D366] text-white px-3 py-1.5 rounded-lg flex gap-x-1.5 items-center text-[12px] font-semibold hover:bg-[#128C7E] transition-all shadow-md"
           >

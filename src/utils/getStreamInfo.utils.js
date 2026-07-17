@@ -1,76 +1,81 @@
 import axios from "axios";
 
-export default async function getStreamInfo(animeTitle, episodeNumber, episodeSlug) {
-  const api_url = import.meta.env.VITE_ANIMASU_API_URL || import.meta.env.VITE_API_URL;
+const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
+
+/**
+ * @param {Object} animeInfo  - Data anime komplit dari AniList
+ * @param {number} episodeNumber - Nomor episode
+ * @param {string} episodeSlug   - Slug episode (khusus untuk ambil stream AL bypass search)
+ * @param {string} source        - "AL" atau "OD" (default "AL")
+ */
+export default async function getStreamInfo(animeInfo, episodeNumber, episodeSlug, source = "AL") {
+  if (!animeInfo) return null;
+
+  const rawSynonyms = animeInfo.animeInfo?.Synonyms || "";
+  const synonyms = rawSynonyms ? rawSynonyms.split(',').map(s => s.trim()) : [];
+  const titles = [...new Set([
+    animeInfo.title,
+    animeInfo.japanese_title,
+    animeInfo.animeInfo?.Japanese,
+    ...synonyms
+  ].filter(Boolean))];
+
+  const year = animeInfo.animeInfo?.Aired ? parseInt(animeInfo.animeInfo.Aired.split('-')[0]) : null;
+
+  const payload = {
+    id: animeInfo.id,
+    titles,
+    year,
+    format: animeInfo.animeInfo?.tvInfo?.showType,
+    status: animeInfo.animeInfo?.Status,
+    totalEpisodes: animeInfo.animeInfo?.tvInfo?.eps,
+    studio: animeInfo.animeInfo?.Studios?.[0] || "",
+    genres: animeInfo.animeInfo?.Genres || [],
+    ep: episodeNumber
+  };
+
   try {
-    let slug = episodeSlug;
-    // Jika tidak ada episodeSlug (fallback), buat slug Otakudesu manual
-    if (!slug) {
-       let baseSlug = animeTitle.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase();
-       slug = `${baseSlug}-episode-${episodeNumber}-sub-indo`;
-    }
-
-    const url = `${api_url}/episode/${slug}`;
-    console.log("Fetching Otakudesu Stream:", url);
-    const response = await axios.get(url);
-    const data = response.data?.data;
+    console.log(`[NEETflixapi] Trying ${source} stream for "${titles[0]}" ep ${episodeNumber}`);
     
-    let videoUrl = null;
-    const iframeUrl = data?.defaultStreamingUrl;
-
-    // 1. Ekstrak link murni dari Desustream (Otakuwatch) menggunakan CORS Proxy publik
-    if (iframeUrl && iframeUrl.includes("desustream")) {
-       try {
-         console.log("Mencoba mengekstrak Desustream iframe...");
-         const corsProxy = "/api/proxy?url=";
-         const htmlResp = await axios.get(corsProxy + encodeURIComponent(iframeUrl));
-         const htmlContent = typeof htmlResp.data === "string" ? htmlResp.data : JSON.stringify(htmlResp.data);
-         
-         let gvMatch = htmlContent.match(/<source[^>]+src=["'](https:\/\/[^"']*googlevideo\.com\/videoplayback[^"']*)["']/i);
-         
-         // Jika gagal menemukan source langsung, coba cari iframe blogger tersembunyi (kasus Ondesu)
-         if (!gvMatch) {
-             console.log("Mencari iframe Blogger tersembunyi...");
-             const bloggerMatch = htmlContent.match(/<iframe[^>]+src=["'](https:\/\/[^"']*blogger\.com\/video\.g[^"']*)["']/i);
-             if (bloggerMatch) {
-                 const bloggerUrl = bloggerMatch[1];
-                 console.log("Menemukan iframe Blogger:", bloggerUrl);
-                 const bloggerResp = await axios.get(corsProxy + encodeURIComponent(bloggerUrl));
-                 const bloggerHtml = typeof bloggerResp.data === "string" ? bloggerResp.data : JSON.stringify(bloggerResp.data);
-                 
-                 // Blogger menyimpan link di dalam javascript config string
-                 gvMatch = bloggerHtml.match(/(https:\/\/[^\s"'<]*googlevideo\.com\/videoplayback[^\s"'<]*)/i);
-             }
-         }
-
-         if (gvMatch) {
-            videoUrl = gvMatch[1];
-            // Decode HTML entities dan Unicode escapes (misal &amp; dan \u0026 menjadi &)
-            videoUrl = videoUrl.replace(/&amp;/g, "&").replace(/\\u0026/g, "&");
-            console.log("Sukses mengekstrak Google Video murni:", videoUrl);
-         }
-       } catch (err) {
-         console.error("Gagal mengekstrak Desustream:", err);
-       }
-    }
-
-    let isIframe = false;
-    // 2. Jika gagal diekstrak, fallback pakai iframeUrl
-    if (!videoUrl) {
-       videoUrl = iframeUrl;
-       isIframe = true;
-    }
-
-    return {
-      streamingLink: {
-        link: { file: videoUrl, isIframe },
-        tracks: [], // Otakudesu biasanya hardsub, jadi tidak ada track subtitle terpisah
-        intro: null,
-        outro: null
+    let url = "";
+    let res;
+    if (source === "OD") {
+      url = `${NEETFLIXAPI}/api/otakudesu/stream-by-title`;
+      res = await axios.post(url, payload);
+    } else {
+      if (episodeSlug) {
+        url = `${NEETFLIXAPI}/api/animelovers/stream?id=${episodeSlug}`;
+        res = await axios.get(url);
+      } else {
+        url = `${NEETFLIXAPI}/api/animelovers/stream-by-title`;
+        res = await axios.post(url, payload);
       }
-    };
-  } catch (error) {
-    console.error("Error fetching stream info dari Otakudesu:", error);
-    return null;
+    }
+
+    const result = res.data?.results || res.data;
+
+    if (result && result.sources?.length) {
+      const best = result.sources[0];
+      console.log(`[NEETflixapi] ✅ Found ${result.sources.length} sources via "${titles[0]}", best: ${best.quality}`);
+
+      return {
+        streamingLink: {
+          link: {
+            file: best.url,
+            isIframe: best.type === "iframe",
+            allSources: result.sources
+          },
+          tracks: [],
+          intro: null,
+          outro: null
+        }
+      };
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || err.message;
+    console.warn(`[NEETflixapi] ${source} Failed with payload "${titles[0]}": ${msg}`);
   }
+
+  console.error(`[NEETflixapi] ❌ Stream tidak ditemukan di ${source}`);
+  return null;
 }

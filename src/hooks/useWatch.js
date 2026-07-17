@@ -33,6 +33,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
   const [nextEpisodeSchedule, setNextEpisodeSchedule] = useState(null);
   const isServerFetchInProgress = useRef(false);
   const isStreamFetchInProgress = useRef(false);
+  const lastStreamKey = useRef(null); // guard: mencegah infinite loop saat servers diupdate
 
   useEffect(() => {
     setEpisodes(null);
@@ -56,22 +57,59 @@ export const useWatch = (animeId, initialEpisodeId) => {
     setAnimeInfoLoading(true);
     isServerFetchInProgress.current = false;
     isStreamFetchInProgress.current = false;
+    lastStreamKey.current = null; // reset stream guard
   }, [animeId]);
 
+  // FETCH SERVERS PERTAMA KALI (karena statik AL & OD)
   useEffect(() => {
+    let mounted = true;
+    const fetchServers = async () => {
+      try {
+        const data = await getServers(animeId, null);
+        if (!mounted) return;
+        const serversList = data || [];
+        const savedServerName = localStorage.getItem("server_name");
+        const initialServer = serversList.find(s => s.serverName === savedServerName) || serversList[0];
+
+        setServers(serversList);
+        setActiveServerType(initialServer?.type);
+        setActiveServerName(initialServer?.serverName);
+        setActiveServerId(initialServer?.data_id); // ini "source-AL" atau "source-OD"
+      } catch (err) {
+        console.error("Error fetching servers:", err);
+      } finally {
+        if (mounted) setServerLoading(false);
+      }
+    };
+    fetchServers();
+    return () => { mounted = false; };
+  }, [animeId]);
+
+  // FETCH ANIME INFO & EPISODES (Re-run jika activeServerId / source berubah)
+  useEffect(() => {
+    if (!activeServerId) return; // Tunggu server diset dulu
+
     const fetchInitialData = async () => {
       try {
         setAnimeInfoLoading(true);
         // Ambil Anime Info (AniList) terlebih dahulu untuk dapat judul
         const animeDataResponse = await getAnimeInfo(animeId, false);
         
-        // Ambil judul Romaji (japanese_title) untuk pencarian Animasu karena lebih akurat
-        const titleForEpisodes = animeDataResponse?.data?.japanese_title || animeDataResponse?.data?.title;
+        // Ambil judul Romaji dan English dari AniList untuk pencarian AL
+        const romajiTitle  = animeDataResponse?.data?.japanese_title;
+        const englishTitle = animeDataResponse?.data?.title;
         
-        // Fetch Otakudesu episodes and TMDB metadata in parallel
+        // Source yang dipilih: "AL" atau "OD"
+        let source = "AL";
+        if (activeServerId?.startsWith("source-")) {
+          source = activeServerId.replace("source-", "");
+        } else if (activeServerId?.startsWith("STREAM-")) {
+          source = activeServerId.split("|")[0].replace("STREAM-", "");
+        }
+        // Fetch episodes (AL/OD) and TMDB metadata in parallel
         const [episodesData, tmdbData] = await Promise.all([
-          getEpisodes(titleForEpisodes),
-          import("@/src/utils/getTMDBMetadata.utils").then(m => m.getTMDBMetadata(titleForEpisodes, animeDataResponse?.data?.animeInfo?.tvInfo?.eps))
+          getEpisodes(animeDataResponse?.data, source),
+          import("@/src/utils/getTMDBMetadata.utils").then(m => m.getTMDBMetadata(romajiTitle || englishTitle, animeDataResponse?.data?.animeInfo?.tvInfo?.eps))
         ]);
 
         // Attach TMDB metadata to each episode
@@ -100,7 +138,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
       }
     };
     fetchInitialData();
-  }, [animeId]);
+  }, [animeId, activeServerId]); // <-- Tambahkan activeServerId agar refetch episode saat pindah AL/OD
 
   useEffect(() => {
     const fetchNextEpisodeSchedule = async () => {
@@ -129,99 +167,22 @@ export const useWatch = (animeId, initialEpisodeId) => {
     }
   }, [episodeId, episodes]);
 
+  // Reset activeServerId ke default (source-AL / source-OD) ketika ganti episode,
+  // jika user sebelumnya memilih resolusi (STREAM-...)
   useEffect(() => {
-    if (!episodeId || !episodes || isServerFetchInProgress.current) return;
+    if (activeServerId?.startsWith("STREAM-")) {
+      const source = activeServerId.startsWith("STREAM-OD") ? "source-OD" : "source-AL";
+      setActiveServerId(source);
+    }
+  }, [episodeId]);
 
-    let mounted = true;
-    const controller = new AbortController();
-    isServerFetchInProgress.current = true;
-    setServerLoading(true);
-
-    const fetchServers = async () => {
-      try {
-        const data = await getServers(animeId, episodeId, { signal: controller.signal });
-        if (!mounted) return;
-
-        const filteredServers = data?.filter(
-          (server) =>
-            server.serverName === "HD-1" ||
-            server.serverName === "HD-2" ||
-            // server.serverName === "HD-3" ||
-            server.serverName === "Vidstreaming" ||
-            server.serverName === "Vidcloud" ||
-            server.serverName === "DouVideo"
-        ) || [];
-
-        let serversList = [...filteredServers];
-
-        if (serversList.some((s) => s.type === "sub")) {
-          if (!serversList.some((s) => s.serverName === "HD-4" && s.type === "sub")) {
-            serversList.push({
-              type: "sub",
-              data_id: "69696968",
-              server_id: "41",
-              serverName: "HD-4",
-            });
-          }
-        }
-
-        if (serversList.some((s) => s.type === "dub")) {
-          if (!serversList.some((s) => s.serverName === "HD-4" && s.type === "dub")) {
-            serversList.push({
-              type: "dub",
-              data_id: "96969696",
-              server_id: "42",
-              serverName: "HD-4",
-            });
-          }
-        }
-
-        const savedServerName = localStorage.getItem("server_name");
-        const savedServerType = localStorage.getItem("server_type");
-
-        const initialServer =
-          serversList.find(s => s.serverName === savedServerName && s.type === savedServerType) ||
-          serversList.find(s => s.serverName === savedServerName) ||
-          serversList.find(
-            s =>
-              s.type === savedServerType &&
-              ["HD-1", "HD-2", "HD-3", "HD-4", "Vidstreaming", "Vidcloud", "DouVideo"].includes(s.serverName)
-          ) ||
-          serversList[0];
-
-        setServers(serversList);
-        setActiveServerType(initialServer?.type);
-        setActiveServerName(initialServer?.serverName);
-        setActiveServerId(initialServer?.data_id);
-      } catch (err) {
-        if (err?.name === "AbortError") return;
-        console.error("Error fetching servers:", err);
-        if (mounted) setError(err.message || "An error occurred.");
-      } finally {
-        if (mounted) {
-          setServerLoading(false);
-          isServerFetchInProgress.current = false;
-        }
-      }
-    };
-
-    fetchServers();
-
-    return () => {
-      mounted = false;
-      try { controller.abort(); } catch (e) {
-        // console.log(e.message);
-      }
-      isServerFetchInProgress.current = false;
-    };
-  }, [episodeId, episodes]);
-
-  // Fetch stream info only when episodeId, activeServerId, and servers are ready
+  // Fetch stream info only when episodeId, activeServerId, servers, AND animeInfo are ready
   useEffect(() => {
     if (
       !episodeId ||
       !activeServerId ||
       !servers ||
+      !animeInfo ||          // tunggu sampai animeInfo (judul) sudah tersedia
       isServerFetchInProgress.current ||
       isStreamFetchInProgress.current
     )
@@ -234,23 +195,58 @@ export const useWatch = (animeId, initialEpisodeId) => {
       return;
     }
     const fetchStreamInfo = async () => {
+      // ── Quality Switch langsung (STREAM- prefix) ──
+      // activeServerId = "STREAM-AL|https://..." → langsung ganti URL, tidak perlu fetch ulang
+      if (activeServerId?.startsWith("STREAM-")) {
+        const directUrl = activeServerId.split("|")[1];
+        setStreamUrl(directUrl);
+        setBuffering(false);   // ← wajib, karena tidak lewat finally block
+        return;
+      }
+
       isStreamFetchInProgress.current = true;
       setBuffering(true);
       try {
         const server = servers.find((srv) => srv.data_id === activeServerId);
         
-        // Dapatkan episodeSlug dari episodes array untuk dilempar ke getStreamInfo
+        // Hitung episode number LANGSUNG di sini — jangan pakai state activeEpisodeNum
+        // karena bisa stale (null) saat effect pertama kali jalan
         const activeEpisode = episodes?.find((ep) => {
           const match = ep.id.match(/ep=(\d+)/);
           return match && match[1] === String(episodeId);
         });
         const episodeSlug = activeEpisode?.slug;
+        const currentEpisodeNum = activeEpisode?.episode_no;
 
-        if (server || true) { // Abaikan pengecekan server karena Animasu/Otakudesu langsung dari judul
+        // Tentukan source (AL atau OD)
+        let source = "AL";
+        if (activeServerId?.startsWith("source-")) {
+          source = activeServerId.replace("source-", "");
+        } else if (activeServerId?.startsWith("STREAM-")) {
+          source = activeServerId.split("|")[0].replace("STREAM-", "");
+        }
+
+        // Guard: Pastikan episodes sudah terupdate sesuai dengan source yang dipilih
+        if (activeEpisode?.source && activeEpisode.source !== source) return;
+
+        // Guard: skip jika sudah diproses
+        const streamKey = `${animeInfo.id}||${episodeId}||${activeServerId}||${episodeSlug}`;
+        if (lastStreamKey.current === streamKey) return;
+        lastStreamKey.current = streamKey;
+
+        if (!currentEpisodeNum) {
+          console.warn("[stream] Episode not found for id:", episodeId);
+          setBuffering(false);
+          isStreamFetchInProgress.current = false;
+          return;
+        }
+
+        if (server || true) { // Abaikan pengecekan server karena streaming langsung dari judul
           const data = await getStreamInfo(
-            animeInfo?.title || animeInfo?.japanese_title,
-            activeEpisodeNum,
-            episodeSlug
+            animeInfo,
+            currentEpisodeNum,  // ← pakai nilai fresh, bukan state activeEpisodeNum
+            episodeSlug,
+            source
           );
           setStreamInfo(data);
           setStreamUrl(data?.streamingLink?.link?.file || null);
@@ -265,8 +261,23 @@ export const useWatch = (animeId, initialEpisodeId) => {
             (track) => track.kind === "thumbnails" && track.file
           );
           if (thumbnailTrack) setThumbnail(thumbnailTrack.file);
-
           setPoster(activeEpisode?.tmdb?.thumbnail || null);
+
+          // Inject kualitas stream ke servers (baik AL maupun OD) — pertahankan tombol sumber
+          const allSources = data?.streamingLink?.link?.allSources;
+          if (allSources?.length) {
+            const qualityServers = allSources.map((src, i) => ({
+              serverName: `${source} ${src.quality}`,   // "AL 1080p", "OD 720p"
+              data_id: `STREAM-${source}|${src.url}`,   // prefix STREAM-AL| atau STREAM-OD|
+              server_id: `stream-${i}`,
+              type: "sub",
+              source: "Quality"               // → masuk QUALITY section di Servers.jsx (sebelumnya "AnimeLovers")
+            }));
+            
+            // Gabungkan sumber utama (AL, OD) dengan pilihan kualitas
+            const baseServers = servers.filter(s => !s.data_id.startsWith("STREAM-")); 
+            setServers([...baseServers, ...qualityServers]);
+          }
         } else {
           setError("No server found with the activeServerId.");
         }
@@ -279,7 +290,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
       }
     };
     fetchStreamInfo();
-  }, [episodeId, activeServerId, servers]);
+  }, [episodeId, activeServerId, servers, animeInfo, episodes]);
 
   return {
     error,

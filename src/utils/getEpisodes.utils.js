@@ -1,90 +1,74 @@
 import axios from "axios";
 
-export default async function getEpisodes(animeTitle) {
-  if (!animeTitle) return { episodes: [], totalEpisodes: 0 };
-  const api_url = import.meta.env.VITE_ANIMASU_API_URL || import.meta.env.VITE_API_URL;
-  
+const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
+
+/**
+ * Ambil daftar episode dari source (AL / OD)
+ * Kembalikan format yang kompatibel dengan useWatch.js:
+ *   { id: "ep=1", episode_no: 1, slug: "al-150441-1", source: "AL" }
+ *
+ * @param {Object} animeInfo  - Data anime komplit dari AniList
+ * @param {string} source     - "AL" atau "OD"
+ */
+export default async function getEpisodes(animeInfo, source = "AL") {
+  if (!animeInfo) return { episodes: [], totalEpisodes: 0, sourceAnimeId: null, sourceTitle: null };
+
+  const rawSynonyms = animeInfo.animeInfo?.Synonyms || "";
+  const synonyms = rawSynonyms ? rawSynonyms.split(',').map(s => s.trim()) : [];
+  const titles = [...new Set([
+    animeInfo.title,
+    animeInfo.japanese_title,
+    animeInfo.animeInfo?.Japanese,
+    ...synonyms
+  ].filter(Boolean))];
+
+  const year = animeInfo.animeInfo?.Aired ? parseInt(animeInfo.animeInfo.Aired.split('-')[0]) : null;
+
+  const payload = {
+    id: animeInfo.id,
+    titles,
+    year,
+    format: animeInfo.animeInfo?.tvInfo?.showType,
+    status: animeInfo.animeInfo?.Status,
+    totalEpisodes: animeInfo.animeInfo?.tvInfo?.eps,
+    studio: animeInfo.animeInfo?.Studios?.[0] || "",
+    genres: animeInfo.animeInfo?.Genres || []
+  };
+
   try {
-    let url;
-    let response;
-    let animeId = null;
-
-    // 1. Bersihkan judul (buang karakter aneh) dan ambil 2 kata pertama untuk menghindari error 500
-    const cleanTitle = animeTitle.replace(/[^a-zA-Z0-9\s]/g, " ").trim();
-    const shortTitle = cleanTitle.split(/\s+/).slice(0, 2).join(" ");
-    const searchUrl = `${api_url}/search/${encodeURIComponent(shortTitle)}`;
+    console.log(`[getEpisodes] Trying ${source} with rich payload for "${titles[0]}"`);
     
-    const searchRes = await axios.get(searchUrl).catch(() => null);
-    
-    if (searchRes?.data?.data?.animeList?.length > 0) {
-        const animeList = searchRes.data.data.animeList;
-        const originalWords = cleanTitle.toLowerCase().split(/\s+/);
-        
-        let bestMatch = animeList[0];
-        let highestScore = -1;
-
-        animeList.forEach(anime => {
-            const resultWords = anime.title.toLowerCase().replace(/[^a-z0-9\s]/g, " ").trim().split(/\s+/);
-            let score = 0;
-            
-            // Hitung kata yang cocok
-            originalWords.forEach(word => {
-                if (resultWords.includes(word)) score++;
-            });
-            
-            // Beri bobot tinggi untuk kata penentu musim (Season, Part, Angka)
-            const crucialWords = ["season", "part", "2", "3", "4", "5", "ii", "iii", "iv"];
-            originalWords.forEach(word => {
-                if (crucialWords.includes(word) && resultWords.includes(word)) {
-                    score += 5;
-                }
-            });
-
-            if (score > highestScore) {
-                highestScore = score;
-                bestMatch = anime;
-            }
-        });
-
-        animeId = bestMatch.animeId;
+    let url = "";
+    if (source === "OD") {
+      url = `${NEETFLIXAPI}/api/otakudesu/episodes-by-title`; // jika OD sudah diubah ke POST
+    } else {
+      url = `${NEETFLIXAPI}/api/animelovers/episodes-by-title`;
     }
 
-    if (!animeId) {
-        // Fallback jika pencarian gagal: tebak slug manual (biasanya salah untuk judul aneh)
-        animeId = animeTitle.replace(/[^a-zA-Z0-9]+/g, "-").replace(/^-+|-+$/g, "").toLowerCase() + "-sub-indo";
-    }
+    const res = await axios.post(url, payload);
+    const data = res.data?.results || res.data;
 
-    // 2. Gunakan animeId yang didapat untuk mengambil daftar episode
-    url = `${api_url}/anime/${animeId}`;
-    console.log("Fetching Otakudesu Episodes:", url);
-    response = await axios.get(url).catch(() => null);
-
-    const rawEpisodes = response?.data?.data?.episodeList || [];
-    const reversedRaw = rawEpisodes.slice().reverse();
-
-    const seen = new Set();
-    const episodes = reversedRaw.map((ep, index) => {
-      const epNumMatch = ep.title.match(/episode\s+(\d+)/i) || ep.title.match(/ep\s+(\d+)/i);
-      let epNum = epNumMatch ? parseInt(epNumMatch[1], 10) : index + 1;
-      
-      while (seen.has(epNum)) {
-        epNum++;
-      }
-      seen.add(epNum);
+    if (data?.episodes?.length) {
+      console.log(`[getEpisodes] ✅ ${source} found ${data.totalEpisodes} episodes for "${titles[0]}"`);
+      const episodes = data.episodes.map((ep) => ({
+        id: `ep=${ep.number}`,
+        episode_no: ep.number,
+        slug: ep.id,
+        source: source,
+      }));
 
       return {
-        id: `ep=${epNum}`,
-        episode_no: epNum,
-        slug: ep.episodeId, // Otakudesu uses episodeId as the slug
+        episodes,
+        totalEpisodes: data.totalEpisodes,
+        sourceAnimeId: data.animeId,
+        sourceTitle: data.animeTitle,
       };
-    });
-
-    return {
-      episodes: episodes,
-      totalEpisodes: episodes.length
-    };
-  } catch (error) {
-    console.error("Error fetching anime episodes from Otakudesu:", error);
-    return { episodes: [], totalEpisodes: 0 };
+    }
+  } catch (err) {
+    const msg = err?.response?.data?.message || err.message;
+    console.warn(`[getEpisodes] ${source} failed for "${titles[0]}": ${msg}`);
   }
+
+  return { episodes: [], totalEpisodes: 0, sourceAnimeId: null, sourceTitle: null };
 }
+

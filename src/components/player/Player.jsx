@@ -66,6 +66,8 @@ export default function Player({
   streamInfo,
 }) {
   const artRef = useRef(null);
+  const artInstanceRef = useRef(null);   // simpan instance art agar bisa switchUrl
+  const prevEpisodeIdRef = useRef(null); // deteksi episode berubah vs ganti kualitas
   const leftAtRef = useRef(0);
   const boundKeydownRef = useRef(null);
   const proxy = import.meta.env.VITE_PROXY_URL;
@@ -291,6 +293,29 @@ export default function Player({
     const isIframe = streamUrl && (streamUrl.includes("desustream") || streamUrl.includes("blogger.com") || streamUrl.includes("otakuwatch"));
     if (!streamUrl || !artRef.current || isIframe) return;
 
+    // ── Ganti Kualitas (bukan episode baru) ──
+    // Jika art sudah ada dan episodeId sama, cukup switchUrl — posisi video dipertahankan
+    if (artInstanceRef.current && prevEpisodeIdRef.current === episodeId) {
+      const useProxy = m3u8proxy?.length > 0 && !m3u8proxy[0].includes("<m3u8_proxy");
+      let switchTarget = streamUrl;
+      let isM3u8 = streamUrl?.includes(".m3u8");
+      
+      if (useProxy && isM3u8) {
+        const headers = { referer: window.location.origin + "/" };
+        switchTarget = m3u8proxy[Math.floor(Math.random() * m3u8proxy.length)] +
+          encodeURIComponent(streamUrl) + "&headers=" + encodeURIComponent(JSON.stringify(headers));
+      }
+      const mediaType = isM3u8 ? "m3u8" : "mp4";
+      try {
+        artInstanceRef.current.switchUrl(switchTarget, mediaType);
+      } catch (e) {
+        console.warn("switchUrl failed, falling back to full reinit", e);
+      }
+      return;
+    }
+
+    prevEpisodeIdRef.current = episodeId;
+
     const iframeUrl = streamInfo?.streamingLink?.iframe;
     const headers = {
       referer: iframeUrl ? new URL(iframeUrl).origin + "/" : window.location.origin + "/",
@@ -311,7 +336,9 @@ export default function Player({
     }
 
     // Abaikan proxy jika proxy di .env belum di-setup (masih berbentuk <m3u8_proxy_server_name>)
-    const useProxy = m3u8proxy?.length > 0 && !m3u8proxy[0].includes("<m3u8_proxy");
+    let isM3u8 = streamUrl?.includes(".m3u8");
+    const useProxy = isM3u8 && m3u8proxy?.length > 0 && !m3u8proxy[0].includes("<m3u8_proxy");
+    
     const finalUrl = useProxy
       ? m3u8proxy[Math.floor(Math.random() * m3u8proxy.length)] +
         encodeURIComponent(streamUrl) +
@@ -319,10 +346,7 @@ export default function Player({
         encodeURIComponent(JSON.stringify(headers))
       : streamUrl;
 
-    let mediaType = "m3u8";
-    if (finalUrl?.includes("googlevideo") || finalUrl?.includes("videoplayback") || finalUrl?.includes(".mp4")) {
-        mediaType = "mp4";
-    }
+    let mediaType = isM3u8 ? "m3u8" : "mp4";
 
     const art = new Artplayer({
       url: finalUrl,
@@ -516,6 +540,7 @@ export default function Player({
     fullscreenEvents.forEach((ev) => document.addEventListener(ev, onFullscreenChange));
 
     art.on("ready", () => {
+      artInstanceRef.current = art; // simpan instance untuk switchUrl nanti
       try {
         container.focus();
       } catch (e) {
@@ -653,6 +678,8 @@ export default function Player({
     return () => {
       if (art && art.destroy) {
         art.destroy(false);
+        artInstanceRef.current = null;
+        prevEpisodeIdRef.current = null;
       }
 
       fullscreenEvents.forEach((ev) => document.removeEventListener(ev, onFullscreenChange));
