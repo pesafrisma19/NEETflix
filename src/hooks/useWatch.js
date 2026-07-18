@@ -130,9 +130,15 @@ export const useWatch = (animeId, initialEpisodeId) => {
             ? episodesData.episodes[0].id.match(/ep=(\d+)/)?.[1]
             : null);
         setEpisodeId(newEpisodeId);
+        
+        // Hentikan buffering (loading) jika tidak ada episode yang didapat (misal gagal match)
+        if (!episodesData?.episodes?.length) {
+          setBuffering(false);
+        }
       } catch (err) {
         console.error("Error fetching initial data:", err);
         setError(err.message || "An error occurred.");
+        setBuffering(false); // Hentikan buffering saat terjadi error fetch
       } finally {
         setAnimeInfoLoading(false);
       }
