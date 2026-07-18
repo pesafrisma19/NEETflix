@@ -394,6 +394,41 @@ export default function Watch() {
                 setActiveServerId={setActiveServerId}
                 serverLoading={serverLoading}
               />
+              
+              {/* Download Episode Section */}
+              {!buffering && activeServerId?.includes("AL") && streamInfo?.streamingLink?.downloads?.length > 0 && (
+                <div className="flex flex-col gap-y-2 bg-[#11101A] p-4 mt-2 mb-2">
+                  <div className="flex flex-col mb-2">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-[#FFBADE]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      <h1 className="w-fit text-lg max-[478px]:text-[16px] font-bold uppercase tracking-wide text-white">
+                        DOWNLOAD EPISODE
+                      </h1>
+                    </div>
+                    <p className="text-gray-400 text-[12px] mt-1 italic">
+                      *Klik tombol di bawah, lalu di tab video yang terbuka klik tanda titik tiga (⋮) di pojok kanan bawah player dan pilih "Download".
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    {streamInfo.streamingLink.downloads.map((dl, idx) => (
+                      <a
+                        key={idx}
+                        href={dl.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex flex-col items-center justify-center bg-[#1e1d2b] hover:bg-[#2a293d] border border-transparent hover:border-[#FFBADE] rounded-md px-6 py-2 min-w-[140px] transition-all cursor-pointer"
+                      >
+                        <span className="text-white font-bold text-[13.5px]">
+                          {dl.server.includes("AnimeLovers") ? "AL" : dl.server} download {dl.quality}
+                        </span>
+                        <span className="text-gray-400 text-[11.5px] mt-1">{dl.size !== "Unknown" ? dl.size : "Direct Link"}</span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               {seasons?.length > 0 && (
                 <div className="flex flex-col gap-y-2 bg-[#11101A] p-4">
                   <h1 className="w-fit text-lg max-[478px]:text-[18px] font-semibold">

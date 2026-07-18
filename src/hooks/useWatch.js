@@ -109,7 +109,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
         // Fetch episodes (AL/OD) and TMDB metadata in parallel
         const [episodesData, tmdbData] = await Promise.all([
           getEpisodes(animeDataResponse?.data, source),
-          import("@/src/utils/getTMDBMetadata.utils").then(m => m.getTMDBMetadata(romajiTitle || englishTitle, animeDataResponse?.data?.animeInfo?.tvInfo?.eps))
+          import("@/src/utils/getTMDBMetadata.utils").then(m => m.getTMDBMetadata(animeId, romajiTitle || englishTitle, animeDataResponse?.data?.animeInfo?.tvInfo?.eps))
         ]);
 
         // Attach TMDB metadata to each episode

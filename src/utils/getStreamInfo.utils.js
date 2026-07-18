@@ -65,6 +65,7 @@ export default async function getStreamInfo(animeInfo, episodeNumber, episodeSlu
             isIframe: best.type === "iframe",
             allSources: result.sources
           },
+          downloads: result.downloads || [],
           tracks: [],
           intro: null,
           outro: null

@@ -2,8 +2,42 @@ import axios from 'axios';
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY || 'd9312f136dcb9c979bdae85d607f9900';
 
-export async function getTMDBMetadata(animeTitle, totalEpisodes) {
+export async function getTMDBMetadata(anilistId, animeTitle, totalEpisodes) {
   try {
+    // 1. Coba fetch dari AniZip untuk akurasi 100% menggunakan AniList ID
+    if (anilistId) {
+      try {
+        const anizipUrl = `https://api.ani.zip/mappings?anilist_id=${anilistId}`;
+        const anizipRes = await axios.get(anizipUrl);
+        
+        if (anizipRes.data && anizipRes.data.episodes) {
+          const tmdbEpisodes = {};
+          const episodes = anizipRes.data.episodes;
+          
+          for (const [epNum, epData] of Object.entries(episodes)) {
+            // Hanya proses key berupa angka (episode regular)
+            if (!isNaN(epNum)) {
+              tmdbEpisodes[epNum] = {
+                title: epData.title?.en || epData.title?.['x-jat'] || epData.title?.ja || `Episode ${epNum}`,
+                thumbnail: epData.image || null,
+                overview: epData.overview || epData.summary || "",
+                airDate: epData.airDate || null,
+                rating: parseFloat(epData.rating) || 0
+              };
+            }
+          }
+          
+          if (Object.keys(tmdbEpisodes).length > 0) {
+            console.log(`[TMDB Metadata] Sukses memuat ${Object.keys(tmdbEpisodes).length} episode dari AniZip untuk ID: ${anilistId}`);
+            return tmdbEpisodes;
+          }
+        }
+      } catch (anizipErr) {
+        console.warn(`[TMDB Metadata] AniZip gagal untuk ID ${anilistId}, fallback ke TMDB search...`);
+      }
+    }
+
+    // 2. Fallback ke logika TMDB lama jika AniZip gagal atau anilistId kosong
     if (!animeTitle) return null;
 
     // Bersihkan judul dari kata-kata seperti "Season 3", "Part 2", dsb
@@ -37,14 +71,14 @@ export async function getTMDBMetadata(animeTitle, totalEpisodes) {
     // Jika tidak ada season yang persis, atau jumlah episodenya sangat berbeda, 
     // kita cari season yang jumlah episodenya paling mendekati totalEpisodes dari Otakudesu
     if (!matchedSeasonObj || (totalEpisodes && Math.abs(matchedSeasonObj.episode_count - totalEpisodes) > 5)) {
-       const bestMatch = seasons.reduce((prev, curr) => {
+       const bestMatchSeason = seasons.reduce((prev, curr) => {
          // Abaikan season 0 (Specials) kecuali memang diminta
          if (curr.season_number === 0) return prev;
          return (Math.abs(curr.episode_count - totalEpisodes) < Math.abs(prev.episode_count - totalEpisodes)) ? curr : prev;
        }, seasons[seasons.length - 1]); // default ke season terakhir
        
-       if (bestMatch) {
-         targetSeason = bestMatch.season_number;
+       if (bestMatchSeason) {
+         targetSeason = bestMatchSeason.season_number;
        }
     }
 
@@ -71,7 +105,7 @@ export async function getTMDBMetadata(animeTitle, totalEpisodes) {
     return tmdbEpisodes;
 
   } catch (err) {
-    console.error("Error fetching TMDB metadata:", err);
+    console.error("Error fetching metadata:", err);
     return null;
   }
 }
