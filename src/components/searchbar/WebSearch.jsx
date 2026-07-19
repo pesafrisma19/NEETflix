@@ -25,6 +25,8 @@ function WebSearch() {
         if (searchValue.trim() && window.innerWidth > 600) {
             if (location.pathname.startsWith('/comic')) {
                 navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+            } else if (location.pathname.startsWith('/film')) {
+                navigate(`/film/search?keyword=${encodeURIComponent(searchValue)}`);
             } else {
                 navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
             }
@@ -36,7 +38,11 @@ function WebSearch() {
             <input
                 type="text"
                 className="bg-white px-4 py-2 text-black focus:outline-none w-full max-[600px]:hidden"
-                placeholder="Search anime..."
+                placeholder={
+                    location.pathname.startsWith('/comic') ? "Search komik..." :
+                        location.pathname.startsWith('/film') ? "Search film..." :
+                            "Search anime..."
+                }
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
                 onFocus={() => setIsFocused(true)}
@@ -55,9 +61,13 @@ function WebSearch() {
                         if (searchValue.trim()) {
                             if (location.pathname.startsWith('/comic')) {
                                 navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+                            } else if (location.pathname.startsWith('/film')) {
+                                navigate(`/film/search?keyword=${encodeURIComponent(searchValue)}`);
                             } else {
                                 navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
                             }
+                            setIsSearchVisible(false);
+                            document.activeElement.blur();
                         }
                     }
                 }}
@@ -76,7 +86,7 @@ function WebSearch() {
                     ref={addSuggestionRef}
                     className="absolute z-[100000] top-full w-full"
                 >
-                    {!location.pathname.startsWith('/comic') && <Suggestion keyword={debouncedValue} className="w-full" />}
+                    {!location.pathname.startsWith('/comic') && !location.pathname.startsWith('/film') && <Suggestion keyword={debouncedValue} className="w-full" />}
                 </div>
             )}
         </div>

@@ -54,7 +54,8 @@ function WatchFilm() {
   if (error) return <Error />;
   if (!streamData) return null;
 
-  const m3u8Url = streamData.iframe ? `https://lk21.strm.web.id/api/stream/raw?url=${encodeURIComponent(streamData.iframe)}` : null;
+  const isYouTube = streamData.iframe && (streamData.iframe.includes('youtube.com') || streamData.iframe.includes('youtu.be'));
+  const m3u8Url = streamData.iframe && !isYouTube ? `https://lk21.strm.web.id/api/stream/raw?url=${encodeURIComponent(streamData.iframe)}` : null;
 
   const titleClean = infoData?.title?.replace(/Nonton | Sub Indo di Lk21/g, "") || id;
 
@@ -71,7 +72,14 @@ function WatchFilm() {
       </div>
 
       <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl border border-[#ffbade]/20 relative bg-black">
-          {m3u8Url ? (
+          {isYouTube ? (
+             <iframe
+                src={streamData.iframe}
+                allowFullScreen
+                className="w-full h-full border-0 absolute top-0 left-0"
+                title={titleClean}
+             ></iframe>
+          ) : m3u8Url ? (
              <FilmPlayer 
                  url={m3u8Url} 
                  title={titleClean} 

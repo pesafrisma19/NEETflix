@@ -25,6 +25,8 @@ import ComicGenre from "./pages/comic/ComicGenre";
 import FilmHome from "./pages/film/FilmHome";
 import FilmDetail from "./pages/film/FilmDetail";
 import WatchFilm from "./pages/film/WatchFilm";
+import FilmSearch from "./pages/film/FilmSearch";
+import FilmCategory from "./pages/film/FilmCategory";
 import Producer from "./components/producer/Producer";
 import SplashScreen from "./components/splashscreen/SplashScreen";
 import Profile from "./pages/profile/Profile";
@@ -88,8 +90,10 @@ function App() {
             
             {/* Film (LK21) Routes */}
             <Route path="/film" element={<FilmHome />} />
+            <Route path="/film/category/:type" element={<FilmCategory />} />
             <Route path="/film/:id" element={<FilmDetail />} />
             <Route path="/film/watch/:id" element={<WatchFilm />} />
+            <Route path="/film/search" element={<FilmSearch />} />
 
             <Route path="/random" element={<AnimeInfo random={true} />} />
             <Route path="/404-not-found-page" element={<Error error="404" />} />

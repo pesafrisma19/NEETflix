@@ -14,6 +14,7 @@ function FilmDetail() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedSeason, setSelectedSeason] = useState("all");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,6 +41,26 @@ function FilmDetail() {
   if (!data) return null;
 
   const titleClean = data.title.replace(/Nonton | Sub Indo di Lk21/g, "");
+  const isYouTube = data.iframe && (data.iframe.includes('youtube.com') || data.iframe.includes('youtu.be'));
+  
+  // Parse seasons if episodes exist
+  let seasons = {};
+  if (data.episodes && data.episodes.length > 0) {
+      data.episodes.forEach(ep => {
+          let sNum = "1";
+          const sMatch = ep.id.match(/season-(\d+)/i) || ep.title.match(/season\s?(\d+)/i);
+          if (sMatch) sNum = sMatch[1];
+          
+          const seasonKey = `Season ${sNum}`;
+          if (!seasons[seasonKey]) seasons[seasonKey] = [];
+          seasons[seasonKey].push(ep);
+      });
+  }
+  const seasonKeys = Object.keys(seasons).sort((a,b) => a.localeCompare(b));
+  
+  const episodesToDisplay = selectedSeason === "all" 
+      ? data.episodes 
+      : seasons[selectedSeason] || [];
 
   return (
     <div className="w-full min-h-screen pb-20">
@@ -90,17 +111,48 @@ function FilmDetail() {
 
       {/* Content Section */}
       <div className="px-10 mt-12 max-[768px]:px-4">
+        {/* Trailer Section */}
+        {isYouTube && (
+            <div className="w-full mb-12">
+                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                    <FontAwesomeIcon icon={faPlay} className="text-[#ffbade]" /> Trailer
+                </h2>
+                <div className="w-full max-w-4xl aspect-video rounded-xl overflow-hidden shadow-2xl border border-[#ffbade]/20">
+                    <iframe
+                        src={data.iframe}
+                        allowFullScreen
+                        className="w-full h-full border-0"
+                        title="Trailer"
+                    ></iframe>
+                </div>
+            </div>
+        )}
+        
         {data.isSeries && data.episodes && data.episodes.length > 0 && (
             <div className="w-full">
-                <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
-                    <FontAwesomeIcon icon={faList} className="text-[#ffbade]" /> Episodes
-                </h2>
+                <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                        <FontAwesomeIcon icon={faList} className="text-[#ffbade]" /> Episodes
+                    </h2>
+                    {seasonKeys.length > 1 && (
+                        <select 
+                            value={selectedSeason}
+                            onChange={(e) => setSelectedSeason(e.target.value)}
+                            className="bg-[#2A2A38] text-white p-2 rounded-lg border border-[#3b3a52] focus:outline-none focus:border-[#ffbade]"
+                        >
+                            <option value="all">All Seasons</option>
+                            {seasonKeys.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    )}
+                </div>
+                
                 <div className="grid grid-cols-5 gap-4 max-[1200px]:grid-cols-4 max-[992px]:grid-cols-3 max-[768px]:grid-cols-2 max-[480px]:grid-cols-1">
-                    {data.episodes.map((ep, index) => (
+                    {episodesToDisplay.map((ep, index) => (
                         <button
                             key={index}
                             onClick={() => navigate(`/film/watch/${id}?epId=${encodeURIComponent(ep.id)}`)}
-                            className="bg-[#2A2A38] hover:bg-[#ffbade] hover:text-black text-white p-4 rounded-xl text-left font-semibold transition-colors border border-[#3b3a52]"
+                            className="bg-[#2A2A38] hover:bg-[#ffbade] hover:text-black text-white p-4 rounded-xl text-left font-semibold transition-colors border border-[#3b3a52] line-clamp-1"
+                            title={ep.title}
                         >
                             {ep.title}
                         </button>

@@ -107,6 +107,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               { name: "Home", path: "/home" },
               { name: "Comic / Manga", path: "/comic" },
               { name: "FILM", path: "/film" },
+              { name: "Daftar Film", path: "/film/category/release" },
               { name: "Most Popular", path: "/most-popular" },
               { name: "Movies", path: "/movie" },
               { name: "TV Series", path: "/tv" },

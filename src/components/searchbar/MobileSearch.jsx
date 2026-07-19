@@ -21,6 +21,8 @@ function MobileSearch() {
         if (searchValue.trim() && window.innerWidth <= 600) {
             if (location.pathname.startsWith('/comic')) {
                 navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+            } else if (location.pathname.startsWith('/film')) {
+                navigate(`/film/search?keyword=${encodeURIComponent(searchValue)}`);
             } else {
                 navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
             }
