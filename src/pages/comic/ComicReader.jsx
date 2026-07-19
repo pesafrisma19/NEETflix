@@ -81,7 +81,7 @@ function ComicReader() {
           </div>
         ) : images.length > 0 ? (
           images.map((img, index) => {
-            const finalUrl = `${import.meta.env.VITE_NEETFLIXAPI_URL}/api/komiku/image?url=${encodeURIComponent(img)}`;
+            const finalUrl = `/api/image-proxy?url=${encodeURIComponent(img)}`;
             return (
               <img 
                 key={index} 
