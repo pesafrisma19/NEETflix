@@ -35,7 +35,11 @@ function MobileSearch() {
                     <input
                         type="text"
                         className="bg-white px-4 py-2 text-black focus:outline-none w-full rounded-l-md"
-                        placeholder="Search anime..."
+                        placeholder={
+                            location.pathname.startsWith('/comic') ? "Search komik..." :
+                                location.pathname.startsWith('/film') ? "Search film..." :
+                                    "Search anime..."
+                        }
                         value={searchValue}
                         onChange={(e) => setSearchValue(e.target.value)}
                         onFocus={() => setIsFocused(true)}
@@ -68,7 +72,11 @@ function MobileSearch() {
                             ref={addSuggestionRef}
                             className="absolute z-[100000] top-full w-full"
                         >
-                            {!location.pathname.startsWith('/comic') && <Suggestion keyword={debouncedValue} className="w-full" />}
+                            <Suggestion 
+                              keyword={debouncedValue} 
+                              className="w-full" 
+                              type={location.pathname.startsWith('/comic') ? "comic" : location.pathname.startsWith('/film') ? "film" : "anime"} 
+                            />
                         </div>
                     )}
                 </div>
