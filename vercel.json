@@ -10,7 +10,7 @@
     },
     {
       "source": "/api/vps/:match*",
-      "destination": "http://101.32.108.245:4444/api/:match*"
+      "destination": "http://101.32.108.245:4444/:match*"
     },
     {
       "source": "/(.*)",
