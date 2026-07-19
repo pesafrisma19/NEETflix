@@ -2,10 +2,11 @@ import Suggestion from '../suggestion/Suggestion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMagnifyingGlass } from '@fortawesome/free-solid-svg-icons';
 import useSearch from '@/src/hooks/useSearch';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 function MobileSearch() {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         isSearchVisible,
         searchValue,
@@ -18,7 +19,11 @@ function MobileSearch() {
     } = useSearch();
     const handleSearchClick = () => {
         if (searchValue.trim() && window.innerWidth <= 600) {
-            navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+            if (location.pathname.startsWith('/comic')) {
+                navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+            } else {
+                navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+            }
         }
     };
     return (
@@ -61,7 +66,7 @@ function MobileSearch() {
                             ref={addSuggestionRef}
                             className="absolute z-[100000] top-full w-full"
                         >
-                            <Suggestion keyword={debouncedValue} className="w-full" />
+                            {!location.pathname.startsWith('/comic') && <Suggestion keyword={debouncedValue} className="w-full" />}
                         </div>
                     )}
                 </div>

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faCircleArrowRight,
   faMagnifyingGlass,
+  faBookOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import getTopSearch from "@/src/utils/getTopSearch.utils";
 import formatSlug from "@/src/utils/formatSlug";
@@ -16,6 +17,7 @@ const NAV_LINKS = [
   { to: "/home", label: "Home" },
   { to: "/movie", label: "Movies" },
   { to: "/tv", label: "TV Series" },
+  { to: "/comic", label: "Comic" },
   { to: "/most-popular", label: "Most Popular" },
   { to: "/top-airing", label: "Top Airing" },
 ];
@@ -158,13 +160,22 @@ function SplashScreen() {
                 </span>
               ))}
             </div>
-            <div className="mt-8 flex max-[780px]:left-10">
+            <div className="mt-8 flex gap-4 max-[780px]:left-10 max-[520px]:flex-col">
               <Link to="/home" className="max-[520px]:w-full">
-                <div className="bg-[#FFBADE] text-black py-4 px-10 rounded-xl font-bold text-[20px] max-[520px]:text-center max-[520px]:font-medium max-[520px]:text-[17px]">
+                <div className="bg-[#FFBADE] text-black py-4 px-10 rounded-xl font-bold text-[20px] max-[520px]:text-center max-[520px]:font-medium max-[520px]:text-[17px] whitespace-nowrap">
                   Watch anime
                   <FontAwesomeIcon
                     icon={faCircleArrowRight}
-                    className="ml-6 text-black"
+                    className="ml-4 text-black"
+                  />
+                </div>
+              </Link>
+              <Link to="/comic" className="max-[520px]:w-full">
+                <div className="bg-[#2A2A38] text-white hover:bg-[#3d3c50] transition-colors py-4 px-10 rounded-xl font-bold text-[20px] max-[520px]:text-center max-[520px]:font-medium max-[520px]:text-[17px] border border-[#ffbade] whitespace-nowrap">
+                  Read comic
+                  <FontAwesomeIcon
+                    icon={faBookOpen}
+                    className="ml-4 text-[#ffbade]"
                   />
                 </div>
               </Link>

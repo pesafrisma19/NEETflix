@@ -2,10 +2,11 @@ import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Suggestion from "../suggestion/Suggestion";
 import useSearch from "@/src/hooks/useSearch";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function WebSearch() {
     const navigate = useNavigate();
+    const location = useLocation();
     const {
         setIsSearchVisible,
         searchValue,
@@ -22,7 +23,11 @@ function WebSearch() {
             setIsSearchVisible((prev) => !prev);
         }
         if (searchValue.trim() && window.innerWidth > 600) {
-            navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+            if (location.pathname.startsWith('/comic')) {
+                navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+            } else {
+                navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+            }
         }
     };
 
@@ -48,7 +53,11 @@ function WebSearch() {
                 onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                         if (searchValue.trim()) {
-                            navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+                            if (location.pathname.startsWith('/comic')) {
+                                navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
+                            } else {
+                                navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
+                            }
                         }
                     }
                 }}
@@ -67,7 +76,7 @@ function WebSearch() {
                     ref={addSuggestionRef}
                     className="absolute z-[100000] top-full w-full"
                 >
-                    <Suggestion keyword={debouncedValue} className="w-full" />
+                    {!location.pathname.startsWith('/comic') && <Suggestion keyword={debouncedValue} className="w-full" />}
                 </div>
             )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle } from "@fortawesome/free-solid-svg-icons";
@@ -32,6 +33,8 @@ export default function LiveChatWidget() {
 
   const messagesEndRef = useRef(null);
   const { addToast } = useToast();
+  const location = useLocation();
+  const isComicReader = location.pathname.startsWith("/comic/read/");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -168,7 +171,7 @@ export default function LiveChatWidget() {
     if (!newMessage.trim()) return;
 
     setLoading(true);
-    
+
     // Siapkan payload, abaikan reply_to_id jika tidak ada agar tidak error
     const payload = {
       user_id: user ? user.id : null,
@@ -206,7 +209,7 @@ export default function LiveChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end font-sans">
+    <div className={`fixed right-6 z-50 flex flex-col items-end font-sans transition-all duration-300 ${isComicReader ? "bottom-24" : "bottom-6"}`}>
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -251,7 +254,7 @@ export default function LiveChatWidget() {
                 const isMe = user && msg.user_id === user.id;
                 const meta = userMeta[msg.user_id];
                 const isAnon = !msg.user_id;
-                
+
                 // Cari pesan asli jika direply
                 const repliedMsg = msg.reply_to_id ? messages.find(m => m.id === msg.reply_to_id) : null;
 
@@ -294,11 +297,10 @@ export default function LiveChatWidget() {
 
                       {/* Bubble Pesan */}
                       <div
-                        className={`relative rounded-2xl p-3 shadow-md ${
-                          isMe
+                        className={`relative rounded-2xl p-3 shadow-md ${isMe
                             ? "bg-[#ffbade] text-black rounded-tr-sm"
                             : "bg-[#2D2B44] text-white rounded-tl-sm"
-                        }`}
+                          }`}
                       >
                         {/* Quote Reply */}
                         {repliedMsg && (
@@ -309,11 +311,11 @@ export default function LiveChatWidget() {
                             <span className="line-clamp-1 opacity-70">{repliedMsg.message}</span>
                           </div>
                         )}
-                        
+
                         <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">{renderMessage(msg.message)}</p>
 
                         {/* Tombol Reply saat hover */}
-                        <button 
+                        <button
                           onClick={() => setReplyTo(msg)}
                           className={`absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 p-2 bg-[#201F31] text-gray-300 rounded-full shadow-lg hover:text-[#ffbade] border border-gray-700 ${isMe ? "-left-10" : "-right-10"}`}
                           title="Balas Pesan"

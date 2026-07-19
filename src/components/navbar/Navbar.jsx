@@ -7,7 +7,8 @@ import {
   faRandom,
   faStar,
   faUser,
-  faSignOutAlt
+  faSignOutAlt,
+  faBookOpen
 } from "@fortawesome/free-solid-svg-icons";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -206,6 +207,7 @@ function Navbar() {
         <div className="flex gap-x-7 items-center max-lg:hidden">
           {[
             { icon: faRandom, label: "Random", path: "/random" },
+            { icon: faBookOpen, label: "Comic", path: "/comic" },
             { icon: faFilm, label: "Movie", path: "/movie" },
             { icon: faStar, label: "Popular", path: "/most-popular" },
           ].map((item) => (

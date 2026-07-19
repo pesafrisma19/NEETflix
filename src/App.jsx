@@ -14,6 +14,14 @@ import { azRoute, categoryRoutes } from "./utils/category.utils";
 import "./App.css";
 import Search from "./pages/search/Search";
 import Watch from "./pages/watch/Watch";
+
+// Comic Imports
+import ComicHome from "./pages/comic/ComicHome";
+import ComicDetail from "./pages/comic/ComicDetail";
+import ComicReader from "./pages/comic/ComicReader";
+import ComicSearch from "./pages/comic/ComicSearch";
+import ComicCategory from "./pages/comic/ComicCategory";
+import ComicGenre from "./pages/comic/ComicGenre";
 import Producer from "./components/producer/Producer";
 import SplashScreen from "./components/splashscreen/SplashScreen";
 import Profile from "./pages/profile/Profile";
@@ -66,6 +74,14 @@ function App() {
             <Route path="/user/:username" element={<PublicProfile />} />
             <Route path="/:id" element={<AnimeInfo />} />
             <Route path="/watch/:id" element={<Watch />} />
+            
+            {/* Comic Routes */}
+            <Route path="/comic" element={<ComicHome />} />
+            <Route path="/comic/:id" element={<ComicDetail />} />
+            <Route path="/comic/read/:chapterId" element={<ComicReader />} />
+            <Route path="/comic/search" element={<ComicSearch />} />
+            <Route path="/comic/category/:type" element={<ComicCategory />} />
+            <Route path="/comic/genre/:genre" element={<ComicGenre />} />
             <Route path="/random" element={<AnimeInfo random={true} />} />
             <Route path="/404-not-found-page" element={<Error error="404" />} />
             <Route path="/error-page" element={<Error />} />
