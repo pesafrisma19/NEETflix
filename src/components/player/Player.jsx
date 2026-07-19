@@ -373,14 +373,15 @@ export default function Player({
         playsInline: true,
       },
       plugins: [
-        artplayerPluginHlsControl({
+        ...(Hls.isSupported() && mediaType === "m3u8" ? [artplayerPluginHlsControl({
           quality: {
+            control: true,
             setting: true,
             getName: (level) => level.height + "P",
             title: "Quality",
             auto: "Auto",
           },
-        }),
+        })] : []),
         artplayerPluginUploadSubtitle(),
         artplayerPluginChapter({ chapters: createChapters() }),
       ],

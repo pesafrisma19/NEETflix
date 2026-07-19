@@ -56,7 +56,7 @@ export default function FilmPlayer({ url, title, poster, onReady }) {
         },
       },
       plugins: [
-        artplayerPluginHlsControl({
+        ...(Hls.isSupported() ? [artplayerPluginHlsControl({
           quality: {
             control: true,
             setting: true,
@@ -71,7 +71,7 @@ export default function FilmPlayer({ url, title, poster, onReady }) {
             title: 'Audio',
             auto: 'Auto',
           }
-        }),
+        })] : []),
       ],
     });
 
