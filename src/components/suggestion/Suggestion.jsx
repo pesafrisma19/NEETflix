@@ -4,8 +4,11 @@ import { useEffect, useState } from "react";
 import BouncingLoader from "../ui/bouncingloader/Bouncingloader";
 import { FaChevronRight } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
-function Suggestion({ keyword, className }) {
+const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
+
+function Suggestion({ keyword, className, type = "anime" }) {
   const [suggestion, setSuggestion] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,7 +20,34 @@ function Suggestion({ keyword, className }) {
       setLoading(true);
       setHasFetched(false);
       try {
-        const data = await getSearchSuggestion(keyword);
+        let data = [];
+        if (type === "anime") {
+          data = await getSearchSuggestion(keyword);
+        } else if (type === "film") {
+          const res = await axios.get(`${NEETFLIXAPI}/api/lk21/search?q=${encodeURIComponent(keyword)}`);
+          if (res.data?.success && res.data?.results?.data) {
+             data = res.data.results.data.slice(0, 5).map(m => ({
+               id: m.id,
+               poster: m.image,
+               title: m.title,
+               releaseDate: m.rating ? `⭐ ${m.rating}` : "N/A",
+               showType: "Film",
+               duration: "N/A"
+             }));
+          }
+        } else if (type === "comic") {
+          const res = await axios.get(`${NEETFLIXAPI}/api/komiku/search?q=${encodeURIComponent(keyword)}`);
+          if (res.data?.success && res.data?.results) {
+             data = res.data.results.slice(0, 5).map(m => ({
+               id: m.id,
+               poster: m.poster || m.image,
+               title: m.title,
+               releaseDate: "Manga",
+               showType: "Comic",
+               duration: "N/A"
+             }));
+          }
+        }
         setSuggestion(data);
         setHasFetched(true);
       } catch (err) {
@@ -28,24 +58,36 @@ function Suggestion({ keyword, className }) {
       }
     };
     fetchSearchSuggestion();
-  }, [keyword]);
+  }, [keyword, type]);
+
+  const getDetailLink = (item) => {
+    if (type === "film") return `/film/${item.id}`;
+    if (type === "comic") return `/comic/${item.id}`;
+    return `/${formatSlug(item.title, item.id)}`;
+  };
+
+  const getViewAllLink = () => {
+    if (type === "film") return `/film/search?keyword=${encodeURIComponent(keyword)}`;
+    if (type === "comic") return `/comic/search?keyword=${encodeURIComponent(keyword)}`;
+    return `/search?keyword=${encodeURIComponent(keyword)}`;
+  };
 
   return (
     <div
       className={`bg-[#2d2b44] ${className} flex ${
         loading ? "justify-center py-7" : "justify-start"
-      } ${!suggestion ? "p-3" : "justify-start"} items-center`}
+      } ${!suggestion || suggestion.length === 0 ? "p-3" : "justify-start"} items-center`}
       style={{ boxShadow: "0 20px 20px rgba(0, 0, 0, .3)" }}
     >
       {loading ? (
         <BouncingLoader />
-      ) : error && !suggestion ? (
+      ) : error && (!suggestion || suggestion.length === 0) ? (
         <div>Error loading suggestions</div>
-      ) : suggestion && hasFetched ? (
+      ) : suggestion && suggestion.length > 0 && hasFetched ? (
         <div className="w-full flex flex-col pt-2 overflow-y-auto">
           {suggestion.map((item, index) => (
             <Link
-              to={`/${formatSlug(item.title, item.id)}`}
+              to={getDetailLink(item)}
               key={index}
               className="group py-2 flex items-start gap-x-3 hover:bg-[#3c3a5e] cursor-pointer px-[10px]"
               style={{
@@ -83,10 +125,14 @@ function Suggestion({ keyword, className }) {
                     <p className="leading-5 text-[13px] font-medium group-hover:text-[#ffbade]">
                       {item.showType || "N/A"}
                     </p>
-                    <span className="dot"></span>
-                    <p className="leading-5 text-[13px] font-light text-[#aaaaaa]">
-                      {item.duration || "N/A"}
-                    </p>
+                    {item?.duration !== "N/A" && (
+                        <>
+                            <span className="dot"></span>
+                            <p className="leading-5 text-[13px] font-light text-[#aaaaaa]">
+                            {item.duration}
+                            </p>
+                        </>
+                    )}
                   </div>
                 )}
               </div>
@@ -95,7 +141,7 @@ function Suggestion({ keyword, className }) {
           {!loading && hasFetched && (
             <Link
               className="w-full flex py-4 justify-center items-center bg-[#ffbade]"
-              to={`/search?keyword=${encodeURIComponent(keyword)}`}
+              to={getViewAllLink()}
             >
               <div className="flex w-fit items-center gap-x-2">
                 <p className="text-[17px] font-light text-black">

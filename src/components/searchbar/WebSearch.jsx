@@ -86,7 +86,11 @@ function WebSearch() {
                     ref={addSuggestionRef}
                     className="absolute z-[100000] top-full w-full"
                 >
-                    {!location.pathname.startsWith('/comic') && !location.pathname.startsWith('/film') && <Suggestion keyword={debouncedValue} className="w-full" />}
+                    <Suggestion 
+                      keyword={debouncedValue} 
+                      className="w-full" 
+                      type={location.pathname.startsWith('/comic') ? "comic" : location.pathname.startsWith('/film') ? "film" : "anime"} 
+                    />
                 </div>
             )}
         </div>

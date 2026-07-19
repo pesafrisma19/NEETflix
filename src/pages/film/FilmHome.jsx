@@ -4,6 +4,16 @@ import FilmCard from '../../components/film/FilmCard';
 import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
 import { Link } from 'react-router-dom';
+import FilmSpotlight from '../../components/film/FilmSpotlight';
+import FilmGenre from '../../components/film/FilmGenre';
+import { FaChevronRight } from 'react-icons/fa';
+
+const FILM_GENRES = [
+  "Action", "Adventure", "Animation", "Biography", "Comedy", 
+  "Crime", "Documentary", "Drama", "Family", "Fantasy", 
+  "History", "Horror", "Musical", "Mystery", "Romance", 
+  "Sci-Fi", "Sport", "Thriller", "War", "Western"
+];
 
 const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
 
@@ -36,28 +46,27 @@ function FilmHome() {
   if (error) return <Error />;
   if (!data) return null;
 
-    const renderSection = (title, items, categoryPath) => {
+  const renderSection = (title, items, categoryPath) => {
     if (!items || items.length === 0) return null;
     return (
-      <div className="mt-12 w-full px-4 max-[1200px]:px-0">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white max-[575px]:text-xl flex items-center gap-x-2">
-            <div className="h-6 w-1 bg-[#ffbade] rounded-full"></div>
+      <div className="mt-[60px] w-full">
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-bold text-2xl text-[#ffbade] max-[478px]:text-[18px] capitalize">
             {title}
-          </h2>
+          </h1>
           {categoryPath && (
             <Link
               to={`/film/category/${categoryPath}`}
               className="flex w-fit items-baseline h-fit rounded-3xl gap-x-1 group"
             >
               <p className="text-white text-[12px] font-semibold h-fit leading-0 group-hover:text-[#ffbade] transition-all ease-out">
-                Lihat Semua
+                View more
               </p>
-              <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 320 512" className="text-white group-hover:text-[#ffbade] text-[10px] transition-all ease-out" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M285.476 272.971L91.132 467.314c-9.373 9.373-24.569 9.373-33.941 0l-22.667-22.667c-9.357-9.357-9.375-24.522-.04-33.901L188.505 256 34.484 101.255c-9.335-9.379-9.317-24.544.04-33.901l22.667-22.667c9.373-9.373 24.569-9.373 33.941 0L285.475 239.03c9.373 9.372 9.373 24.568.001 33.941z"></path></svg>
+              <FaChevronRight className="text-white text-[10px] group-hover:text-[#ffbade] transition-all ease-out" />
             </Link>
           )}
         </div>
-        <div className="grid grid-cols-6 max-[1200px]:grid-cols-5 max-[990px]:grid-cols-4 max-[758px]:grid-cols-3 max-[478px]:grid-cols-2 gap-x-4 gap-y-8">
+        <div className="grid grid-cols-4 max-[1200px]:grid-cols-5 max-[990px]:grid-cols-4 max-[758px]:grid-cols-3 max-[478px]:grid-cols-2 gap-x-3 gap-y-8">
           {items.slice(0, 12).map((item) => (
             <FilmCard 
               key={item.id} 
@@ -73,23 +82,55 @@ function FilmHome() {
     );
   };
 
-  return (
-    <div className="pt-24 pb-20 w-full min-h-screen">
-      <div className="px-4 w-full max-[1200px]:px-0 flex flex-col items-center">
-        {/* Banner Placeholder */}
-        <div className="w-full h-[300px] bg-[#2A2A38] rounded-xl flex items-center justify-center border border-[#ffbade] mb-8 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-black to-transparent z-10"></div>
-            <div className="relative z-20 text-left p-8 w-full">
-                <h1 className="text-5xl font-extrabold text-white mb-4">NEETflix <span className="text-[#ffbade]">FILM</span></h1>
-                <p className="text-gray-300 max-w-xl text-lg">Nonton film dan series terlengkap, tercepat, dan bebas iklan pop-up. Eksklusif di NEETflix.</p>
-            </div>
-            <img src="/splash.webp" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+  const renderSideSection = (title, items) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="w-full flex flex-col mt-[60px]">
+        <h1 className="text-2xl text-[#ffbade] max-[478px]:text-[18px] font-bold mb-6">
+          {title}
+        </h1>
+        <div className="flex flex-col gap-y-4 bg-[#2A2A38] p-4 rounded-xl">
+          {items.slice(0, 10).map((item, index) => (
+            <Link
+              to={`/film/${item.id}`}
+              key={index}
+              className="flex items-center gap-x-4 group border-b border-[#3b3a52] pb-4 last:border-0 last:pb-0"
+            >
+              <img
+                src={item.image}
+                alt={item.title}
+                className="w-[60px] h-[80px] object-cover rounded-md group-hover:opacity-80 transition-opacity"
+              />
+              <div className="flex flex-col">
+                <p className="text-white font-semibold line-clamp-2 group-hover:text-[#ffbade] text-[14px]">
+                  {item.title}
+                </p>
+                <p className="text-[#ffbade] text-[12px] font-bold mt-1">
+                  ⭐ {item.rating || "N/A"}
+                </p>
+              </div>
+            </Link>
+          ))}
         </div>
+      </div>
+    );
+  };
 
-        {renderSection("Film Terbaru", data.filmTerbaru, "release")}
-        {renderSection("Series Terbaru", data.seriesTerbaru, "latest-series")}
-        {renderSection("Film Unggulan", data.filmUnggulan, "populer")}
-        {renderSection("Series Unggulan", data.seriesUnggulan, "latest-series")}
+  return (
+    <div className="px-4 w-full max-[1200px]:px-0">
+      <FilmSpotlight spotlights={data.filmTerbaru.slice(0, 5)} />
+      
+      <div className="w-full grid grid-cols-[minmax(0,75%),minmax(0,25%)] gap-x-6 max-[1200px]:flex flex-col max-[1200px]:px-4">
+        <div>
+          {renderSection("Film Terbaru", data.filmTerbaru, "release")}
+          {renderSection("Series Terbaru", data.seriesTerbaru, "latest-series")}
+          {renderSection("Series Update", data.seriesUpdate, "latest-series")}
+        </div>
+        <div className="w-full mt-[60px] max-[1200px]:mt-0">
+          <FilmGenre data={FILM_GENRES} />
+          {renderSideSection("Film Unggulan", data.filmUnggulan)}
+          {renderSideSection("Top Bulan Ini", data.topBulanIni)}
+        </div>
       </div>
     </div>
   );
