@@ -18,12 +18,12 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: '/logoN.png',
+            src: '/logon2.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: '/logoN.png',
+            src: '/logon2.png',
             sizes: '512x512',
             type: 'image/png'
           }
