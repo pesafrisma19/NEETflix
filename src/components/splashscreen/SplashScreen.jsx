@@ -7,6 +7,7 @@ import {
   faCircleArrowRight,
   faMagnifyingGlass,
   faBookOpen,
+  faFilm,
 } from "@fortawesome/free-solid-svg-icons";
 import getTopSearch from "@/src/utils/getTopSearch.utils";
 import formatSlug from "@/src/utils/formatSlug";
@@ -175,6 +176,15 @@ function SplashScreen() {
                   Read comic
                   <FontAwesomeIcon
                     icon={faBookOpen}
+                    className="ml-4 text-[#ffbade]"
+                  />
+                </div>
+              </Link>
+              <Link to="/film" className="max-[520px]:w-full">
+                <div className="bg-[#2A2A38] text-white hover:bg-[#3d3c50] transition-colors py-4 px-10 rounded-xl font-bold text-[20px] max-[520px]:text-center max-[520px]:font-medium max-[520px]:text-[17px] border border-[#ffbade] whitespace-nowrap">
+                  Watch film
+                  <FontAwesomeIcon
+                    icon={faFilm}
                     className="ml-4 text-[#ffbade]"
                   />
                 </div>

@@ -106,7 +106,7 @@ const Sidebar = ({ isOpen, onClose }) => {
             {[
               { name: "Home", path: "/home" },
               { name: "Comic / Manga", path: "/comic" },
-              { name: "Dubbed Anime", path: "/dubbed-anime" },
+              { name: "FILM", path: "/film" },
               { name: "Most Popular", path: "/most-popular" },
               { name: "Movies", path: "/movie" },
               { name: "TV Series", path: "/tv" },

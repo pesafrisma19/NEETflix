@@ -209,7 +209,7 @@ function Navbar() {
             { icon: faRandom, label: "Random", path: "/random" },
             { icon: faBookOpen, label: "Comic", path: "/comic" },
             { icon: faFilm, label: "Movie", path: "/movie" },
-            { icon: faStar, label: "Popular", path: "/most-popular" },
+            { icon: faStar, label: "FILM", path: "/film" },
           ].map((item) => (
             <Link
               key={item.path}

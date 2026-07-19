@@ -22,6 +22,9 @@ import ComicReader from "./pages/comic/ComicReader";
 import ComicSearch from "./pages/comic/ComicSearch";
 import ComicCategory from "./pages/comic/ComicCategory";
 import ComicGenre from "./pages/comic/ComicGenre";
+import FilmHome from "./pages/film/FilmHome";
+import FilmDetail from "./pages/film/FilmDetail";
+import WatchFilm from "./pages/film/WatchFilm";
 import Producer from "./components/producer/Producer";
 import SplashScreen from "./components/splashscreen/SplashScreen";
 import Profile from "./pages/profile/Profile";
@@ -82,6 +85,12 @@ function App() {
             <Route path="/comic/search" element={<ComicSearch />} />
             <Route path="/comic/category/:type" element={<ComicCategory />} />
             <Route path="/comic/genre/:genre" element={<ComicGenre />} />
+            
+            {/* Film (LK21) Routes */}
+            <Route path="/film" element={<FilmHome />} />
+            <Route path="/film/:id" element={<FilmDetail />} />
+            <Route path="/film/watch/:id" element={<WatchFilm />} />
+
             <Route path="/random" element={<AnimeInfo random={true} />} />
             <Route path="/404-not-found-page" element={<Error error="404" />} />
             <Route path="/error-page" element={<Error />} />
