@@ -9,6 +9,10 @@
       "destination": "/api/proxy.js"
     },
     {
+      "source": "/api/vps/:match*",
+      "destination": "http://101.32.108.245:4444/api/:match*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
