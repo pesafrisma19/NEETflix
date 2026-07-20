@@ -146,7 +146,7 @@ export default function AuthModal({ isOpen, onClose }) {
             required
           />
           
-          <div className="w-full flex justify-center mt-2 overflow-hidden">
+          <div className="w-full flex justify-center mt-2 transform scale-[0.85] sm:scale-100 origin-center">
             <Turnstile 
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} 
               onSuccess={(token) => setTurnstileToken(token)}
