@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
+import CommentComic from "../../components/commentcomic/CommentComic";
 
 function ComicReader() {
   const { chapterId } = useParams();
@@ -101,6 +102,10 @@ function ComicReader() {
         ) : (
           <div className="text-white py-20">Tidak ada gambar yang ditemukan.</div>
         )}
+      </div>
+
+      <div className="w-full max-w-3xl px-4 py-8 pb-32">
+        <CommentComic targetId={chapterId} episodeTitle={`Chapter ${chapterId}`} />
       </div>
 
       {/* Bottom Bar / Navigasi Chapter */}

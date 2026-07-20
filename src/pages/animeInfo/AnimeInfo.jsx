@@ -91,6 +91,7 @@ function AnimeInfo({ random = false }) {
   const [isFull, setIsFull] = useState(false);
   const [animeInfo, setAnimeInfo] = useState(null);
   const [seasons, setSeasons] = useState(null);
+  const [isSeasonsModalOpen, setIsSeasonsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { homeInfo } = useHomeInfo();
@@ -509,7 +510,7 @@ function AnimeInfo({ random = false }) {
                 More Seasons
               </h1>
               <div className="flex flex-wrap gap-4 max-[575px]:grid max-[575px]:grid-cols-3 max-[575px]:gap-3 max-[480px]:grid-cols-2">
-                {seasons.map((season, index) => (
+                {(seasons.length > 7 ? seasons.slice(0, 7) : seasons).map((season, index) => (
                   <Link
                     to={`/${formatSlug(season?.season, season?.id)}`}
                     key={index}
@@ -526,14 +527,57 @@ function AnimeInfo({ random = false }) {
                     >
                       {season.season}
                     </p>
-                    <div className="absolute inset-0 z-10 bg-black/40 bg-[radial-gradient(#ffffff33_1px,transparent_1px)] [background-size:4px_4px]"></div>
+                    <div className="absolute inset-0 z-10 bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:3px_3px] opacity-40"></div>
                     <img
                       src={season.season_poster}
                       alt=""
-                      className="w-full h-full object-cover blur-[3px] opacity-50"
+                      className="w-full h-full object-cover blur-[3px] opacity-50 group-hover:opacity-100 transition-opacity"
                     />
                   </Link>
                 ))}
+                {seasons.length > 7 && (
+                  <button
+                    onClick={() => setIsSeasonsModalOpen(true)}
+                    className="relative w-[20%] h-[60px] rounded-lg overflow-hidden cursor-pointer bg-[#2A2A38] border border-[#3A3A48] hover:border-[#ffbade] transition-colors flex items-center justify-center max-[1200px]:w-[140px] max-[575px]:w-full"
+                  >
+                    <span className="text-[13px] font-bold text-[#ffbade]">View All (+{seasons.length - 7})</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Modal for All Seasons */}
+          {isSeasonsModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4">
+              <div className="bg-[#191826] w-full max-w-4xl rounded-xl p-6 max-h-[85vh] flex flex-col relative border border-[#2a293d]">
+                <button 
+                  onClick={() => setIsSeasonsModalOpen(false)} 
+                  className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl leading-none"
+                >
+                  &times;
+                </button>
+                <h2 className="text-xl font-bold mb-4 text-white">All Seasons ({seasons.length})</h2>
+                <div className="overflow-y-auto pr-2 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {seasons.map((season, index) => (
+                    <Link
+                      to={`/${formatSlug(season?.season, season?.id)}`}
+                      key={index}
+                      onClick={() => setIsSeasonsModalOpen(false)}
+                      className={`relative h-[60px] rounded-lg overflow-hidden cursor-pointer group ${currentId === String(season.id) ? "border border-[#ffbade]" : ""}`}
+                    >
+                      <p className={`text-[13px] text-center font-bold absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full px-2 z-30 line-clamp-2 group-hover:text-[#ffbade] ${currentId === String(season.id) ? "text-[#ffbade]" : "text-white"}`}>
+                        {season.season}
+                      </p>
+                      <div className="absolute inset-0 z-10 bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:3px_3px] opacity-40"></div>
+                      <img
+                        src={season.season_poster}
+                        alt=""
+                        className="w-full h-full object-cover blur-[3px] opacity-50 group-hover:opacity-100 transition-opacity"
+                      />
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           )}

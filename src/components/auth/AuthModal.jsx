@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FcGoogle } from "react-icons/fc";
 import { useToast } from "../../context/ToastContext";
+import { Turnstile } from '@marsidev/react-turnstile';
 
 export default function AuthModal({ isOpen, onClose }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -11,6 +12,7 @@ export default function AuthModal({ isOpen, onClose }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState(null);
   const { addToast } = useToast();
   const lastLoginMethod = localStorage.getItem('last_login_method');
 
@@ -36,7 +38,11 @@ export default function AuthModal({ isOpen, onClose }) {
     setLoading(true);
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ 
+          email, 
+          password,
+          options: { captchaToken: turnstileToken }
+        });
         if (error) throw error;
         localStorage.setItem('last_login_method', 'email');
         addToast("Berhasil login!", "success");
@@ -51,7 +57,10 @@ export default function AuthModal({ isOpen, onClose }) {
         const { data, error } = await supabase.auth.signUp({ 
             email, 
             password,
-            options: { data: { full_name: username, username: username } } 
+            options: { 
+              data: { full_name: username, username: username },
+              captchaToken: turnstileToken 
+            } 
         });
         if (error) throw error;
 
@@ -136,6 +145,19 @@ export default function AuthModal({ isOpen, onClose }) {
             className="w-full px-4 py-3 rounded-xl bg-[#2D2B44] text-white border border-transparent focus:border-[#ffbade] focus:outline-none transition-all"
             required
           />
+          
+          <div className="w-full flex justify-center mt-2 overflow-hidden">
+            <Turnstile 
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} 
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{
+                theme: 'dark'
+              }}
+            />
+          </div>
+
           <div className="relative w-full mt-2">
             {lastLoginMethod === 'email' && isLogin && (
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-[#ffbade] text-black text-[10px] font-bold px-2 py-0.5 rounded-full shadow-md z-10 animate-bounce">
@@ -144,10 +166,10 @@ export default function AuthModal({ isOpen, onClose }) {
             )}
             <button 
               type="submit" 
-              disabled={loading}
-              className={`w-full bg-[#ffbade] text-black font-bold py-3 rounded-xl hover:bg-[#ff99cc] transition-colors disabled:opacity-50 ${lastLoginMethod === 'email' && isLogin ? 'ring-2 ring-white/50' : ''}`}
+              disabled={loading || !turnstileToken}
+              className={`w-full bg-[#ffbade] text-black font-bold py-3 rounded-xl hover:bg-[#ff99cc] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${lastLoginMethod === 'email' && isLogin ? 'ring-2 ring-white/50' : ''}`}
             >
-              {loading ? "Memproses..." : (isLogin ? "Login" : "Daftar Sekarang")}
+              {loading ? "Memproses..." : (!turnstileToken ? "Menunggu Captcha..." : (isLogin ? "Login" : "Daftar Sekarang"))}
             </button>
           </div>
         </form>

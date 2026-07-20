@@ -52,16 +52,17 @@ export default function LiveChatWidget() {
     if (uniqueIds.length === 0) return;
 
     const [statsRes, customsRes] = await Promise.all([
-      supabase.from("user_stats").select("user_id, level").in("user_id", uniqueIds),
+      supabase.from("profiles").select("id, level, role").in("id", uniqueIds),
       supabase.from("user_customizations").select("user_id, custom_title, title_color, name_color").in("user_id", uniqueIds),
     ]);
 
     const newMeta = {};
     uniqueIds.forEach((id) => {
-      const stat = statsRes.data?.find((s) => s.user_id === id);
+      const stat = statsRes.data?.find((s) => s.id === id);
       const custom = customsRes.data?.find((c) => c.user_id === id);
       newMeta[id] = {
         level: stat?.level || 1,
+        role: stat?.role || 'user',
         title: custom?.custom_title || getRankTitle(stat?.level || 1),
         titleColor: custom?.title_color || "#ffbade",
         nameColor: custom?.name_color || "#ffffff",
@@ -106,7 +107,7 @@ export default function LiveChatWidget() {
           created_at,
           user_id,
           reply_to_id,
-          profiles(display_name, username, avatar_url)
+          profiles(display_name, username, avatar_url, level, role)
         `)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -115,7 +116,7 @@ export default function LiveChatWidget() {
         console.warn("Kolom reply_to_id mungkin belum ada, fallback query:", response.error.message);
         const fallbackRes = await supabase
           .from("live_chat")
-          .select(`id, message, created_at, user_id, profiles(display_name, username, avatar_url)`)
+          .select(`id, message, created_at, user_id, profiles(display_name, username, avatar_url, level, role)`)
           .order("created_at", { ascending: false })
           .limit(50);
         chatData = fallbackRes.data;
@@ -140,7 +141,7 @@ export default function LiveChatWidget() {
             if (payload.new.user_id) {
               const { data } = await supabase
                 .from("profiles")
-                .select("display_name, username, avatar_url")
+                .select("display_name, username, avatar_url, level, role")
                 .eq("id", payload.new.user_id)
                 .single();
               profileData = data;

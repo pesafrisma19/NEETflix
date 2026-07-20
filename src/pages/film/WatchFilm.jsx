@@ -5,6 +5,7 @@ import FilmPlayer from '../../components/film/FilmPlayer';
 import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
 import Episodelist from '../../components/episodelist/Episodelist';
+import CommentFilm from "@/src/components/commentfilm/CommentFilm";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faList } from '@fortawesome/free-solid-svg-icons';
 import { FaWhatsapp, FaLink } from 'react-icons/fa';
@@ -306,7 +307,7 @@ function WatchFilm() {
       
       <div className="w-full px-4 grid grid-cols-[minmax(0,75%),minmax(0,25%)] gap-x-6 max-[1200px]:flex flex-col mt-4">
         <div className="flex flex-col gap-y-7">
-            {/* placeholder for main content below share */}
+            <CommentFilm targetId={id} episodeTitle={titleClean} />
         </div>
         <div>
             {/* placeholder for sidebar related films */}
