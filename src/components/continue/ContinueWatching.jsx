@@ -51,7 +51,16 @@ const ContinueWatching = () => {
         console.error("Error fetching watch history", err);
       }
     };
+
     fetchWatchList();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      fetchWatchList();
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // Memoize watchList to avoid unnecessary re-renders
