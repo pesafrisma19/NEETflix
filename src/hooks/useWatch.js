@@ -94,11 +94,11 @@ export const useWatch = (animeId, initialEpisodeId) => {
         setAnimeInfoLoading(true);
         // Ambil Anime Info (AniList) terlebih dahulu untuk dapat judul
         const animeDataResponse = await getAnimeInfo(animeId, false);
-        
+
         // Ambil judul Romaji dan English dari AniList untuk pencarian AL
-        const romajiTitle  = animeDataResponse?.data?.japanese_title;
+        const romajiTitle = animeDataResponse?.data?.japanese_title;
         const englishTitle = animeDataResponse?.data?.title;
-        
+
         // Source yang dipilih: "AL" atau "OD"
         let source = "AL";
         if (activeServerId?.startsWith("source-")) {
@@ -124,13 +124,16 @@ export const useWatch = (animeId, initialEpisodeId) => {
         setSeasons(animeDataResponse?.seasons);
         setEpisodes(episodesData?.episodes);
         setTotalEpisodes(episodesData?.totalEpisodes);
-        const newEpisodeId =
+        let newEpisodeId =
           initialEpisodeId ||
           (episodesData?.episodes?.length > 0
             ? episodesData.episodes[0].id.match(/ep=(\d+)/)?.[1]
             : null);
+        if (newEpisodeId && String(newEpisodeId).includes('ep=')) {
+          newEpisodeId = String(newEpisodeId).replace('ep=', '');
+        }
         setEpisodeId(newEpisodeId);
-        
+
         // Hentikan buffering (loading) jika tidak ada episode yang didapat (misal gagal match)
         if (!episodesData?.episodes?.length) {
           setBuffering(false);
@@ -165,7 +168,8 @@ export const useWatch = (animeId, initialEpisodeId) => {
     }
     const activeEpisode = episodes.find((episode) => {
       const match = episode.id.match(/ep=(\d+)/);
-      return match && match[1] === String(episodeId);
+      const cleanId = String(episodeId).replace('ep=', '');
+      return match && match[1] === cleanId;
     });
     const newActiveEpisodeNum = activeEpisode ? activeEpisode.episode_no : null;
     if (activeEpisodeNum !== newActiveEpisodeNum) {
@@ -214,12 +218,13 @@ export const useWatch = (animeId, initialEpisodeId) => {
       setBuffering(true);
       try {
         const server = servers.find((srv) => srv.data_id === activeServerId);
-        
+
         // Hitung episode number LANGSUNG di sini — jangan pakai state activeEpisodeNum
         // karena bisa stale (null) saat effect pertama kali jalan
         const activeEpisode = episodes?.find((ep) => {
           const match = ep.id.match(/ep=(\d+)/);
-          return match && match[1] === String(episodeId);
+          const cleanId = String(episodeId).replace('ep=', '');
+          return match && match[1] === cleanId;
         });
         const episodeSlug = activeEpisode?.slug;
         const currentEpisodeNum = activeEpisode?.episode_no;
@@ -279,9 +284,9 @@ export const useWatch = (animeId, initialEpisodeId) => {
               type: "sub",
               source: "Quality"               // → masuk QUALITY section di Servers.jsx (sebelumnya "AnimeLovers")
             }));
-            
+
             // Gabungkan sumber utama (AL, OD) dengan pilihan kualitas
-            const baseServers = servers.filter(s => !s.data_id.startsWith("STREAM-")); 
+            const baseServers = servers.filter(s => !s.data_id.startsWith("STREAM-"));
             setServers([...baseServers, ...qualityServers]);
 
             // Auto-highlight quality pertama yang sedang diputar

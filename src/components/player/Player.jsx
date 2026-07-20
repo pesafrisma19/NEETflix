@@ -96,22 +96,32 @@ export default function Player({
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
 
-        // Delete old history for this anime to avoid duplicates
-        await supabase
+        // Cek apakah anime_id ini sudah ada di history
+        const { data: existing } = await supabase
           .from('watch_history')
-          .delete()
+          .select('id, episode_id, left_at')
           .eq('user_id', session.user.id)
-          .eq('anime_id', String(activeId));
+          .eq('anime_id', String(activeId))
+          .maybeSingle();
           
-        // Insert new history
-        await supabase
-          .from('watch_history')
-          .insert({
-            user_id: session.user.id,
-            anime_id: String(activeId),
-            episode_id: String(episodeId),
-            // watched_at is auto-generated timestamptz
-          });
+        if (existing) {
+           await supabase
+             .from('watch_history')
+             .update({
+                episode_id: String(episodeId),
+                left_at: existing.episode_id === String(episodeId) ? existing.left_at : null,
+                watched_at: new Date()
+             })
+             .eq('id', existing.id);
+        } else {
+           await supabase
+             .from('watch_history')
+             .insert({
+               user_id: session.user.id,
+               anime_id: String(activeId),
+               episode_id: String(episodeId),
+             });
+        }
       } catch (err) {
         console.error("Failed to save watch history to DB", err);
       }
@@ -543,7 +553,7 @@ export default function Player({
     ];
     fullscreenEvents.forEach((ev) => document.addEventListener(ev, onFullscreenChange));
 
-    art.on("ready", () => {
+    art.on("ready", async () => {
       artInstanceRef.current = art; // simpan instance untuk switchUrl nanti
       try {
         container.focus();
@@ -551,12 +561,50 @@ export default function Player({
         // ignore
       }
 
-      const continueWatchingList = JSON.parse(localStorage.getItem("continueWatching")) || [];
-      const currentEntry = continueWatchingList.find((item) => item.episodeId === episodeId);
-      if (currentEntry?.leftAt) art.currentTime = currentEntry.leftAt;
+      let initialLeftAt = null;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const activeId = paramSlug || animeInfo?.id;
+          const { data } = await supabase
+            .from('watch_history')
+            .select('left_at')
+            .eq('user_id', session.user.id)
+            .eq('anime_id', String(activeId))
+            .eq('episode_id', String(episodeId))
+            .maybeSingle();
+          if (data?.left_at) initialLeftAt = data.left_at;
+        }
+      } catch (err) {
+        console.error("Error fetching left_at from DB:", err);
+      }
+
+      if (!initialLeftAt) {
+        const continueWatchingList = JSON.parse(localStorage.getItem("continueWatching")) || [];
+        const currentEntry = continueWatchingList.find((item) => item.episodeId === episodeId);
+        if (currentEntry?.leftAt) initialLeftAt = currentEntry.leftAt;
+      }
+
+      if (initialLeftAt) art.currentTime = initialLeftAt;
 
       art.on("video:timeupdate", () => {
         leftAtRef.current = Math.floor(art.currentTime);
+      });
+
+      art.on("pause", async () => {
+        if (!leftAtRef.current) return;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const activeId = paramSlug || animeInfo?.id;
+            await supabase
+              .from('watch_history')
+              .update({ left_at: leftAtRef.current })
+              .eq('user_id', session.user.id)
+              .eq('anime_id', String(activeId))
+              .eq('episode_id', String(episodeId));
+          }
+        } catch (err) {}
       });
 
       setTimeout(() => {
@@ -680,6 +728,26 @@ export default function Player({
     });
 
     return () => {
+      const activeId = paramSlug || animeInfo?.id;
+      const finalLeftAt = leftAtRef.current;
+      const finalEpisodeId = episodeId;
+      
+      const saveFinalLeftAt = async () => {
+        if (!finalLeftAt) return;
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            await supabase
+              .from('watch_history')
+              .update({ left_at: finalLeftAt })
+              .eq('user_id', session.user.id)
+              .eq('anime_id', String(activeId))
+              .eq('episode_id', String(finalEpisodeId));
+          }
+        } catch (err) {}
+      };
+      saveFinalLeftAt();
+
       if (art && art.destroy) {
         art.destroy(false);
         artInstanceRef.current = null;
