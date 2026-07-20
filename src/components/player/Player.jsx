@@ -110,7 +110,8 @@ export default function Player({
              .update({
                 episode_id: String(episodeId),
                 left_at: existing.episode_id === String(episodeId) ? existing.left_at : null,
-                watched_at: new Date()
+                watched_at: new Date(),
+                details: { title: animeInfo?.title, poster: animeInfo?.poster }
              })
              .eq('id', existing.id);
         } else {
@@ -120,6 +121,7 @@ export default function Player({
                user_id: session.user.id,
                anime_id: String(activeId),
                episode_id: String(episodeId),
+               details: { title: animeInfo?.title, poster: animeInfo?.poster }
              });
         }
       } catch (err) {

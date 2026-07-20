@@ -9,6 +9,7 @@ import { FaHistory, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
+import { supabase } from "@/src/lib/supabaseClient";
 
 const ContinueWatching = () => {
   const [watchList, setWatchList] = useState([]);
@@ -16,22 +17,65 @@ const ContinueWatching = () => {
   const swiperRef = useRef(null);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("continueWatching") || "[]");
-    data.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-    setWatchList(data);
+    const fetchWatchList = async () => {
+      try {
+        let localData = JSON.parse(localStorage.getItem("continueWatching") || "[]");
+        localData.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: dbHistory } = await supabase
+            .from('watch_history')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('watched_at', { ascending: false })
+            .limit(10);
+            
+          if (dbHistory && dbHistory.length > 0) {
+            const mappedDb = dbHistory.map(item => ({
+              id: item.anime_id,
+              episodeId: item.episode_id,
+              episodeNum: String(item.episode_id).replace('ep=', ''),
+              poster: item.details?.poster,
+              title: item.details?.title,
+              leftAt: item.left_at,
+              updatedAt: new Date(item.watched_at).getTime()
+            }));
+            setWatchList(mappedDb);
+            return;
+          }
+        }
+        
+        setWatchList(localData);
+      } catch (err) {
+        console.error("Error fetching watch history", err);
+      }
+    };
+    fetchWatchList();
   }, []);
 
   // Memoize watchList to avoid unnecessary re-renders
   const memoizedWatchList = useMemo(() => watchList, [watchList]);
 
-  const removeFromWatchList = (episodeId) => {
+  const removeFromWatchList = async (episodeId, animeId) => {
     setWatchList((prevList) => {
       const updatedList = prevList.filter(
-        (item) => item.episodeId !== episodeId
+        (item) => item.id !== animeId
       );
       localStorage.setItem("continueWatching", JSON.stringify(updatedList));
       return updatedList;
     });
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && animeId) {
+        await supabase
+          .from('watch_history')
+          .delete()
+          .eq('user_id', session.user.id)
+          .eq('anime_id', animeId);
+      }
+    } catch (err) {}
   };
 
   if (memoizedWatchList.length === 0) return null;
@@ -83,7 +127,7 @@ const ContinueWatching = () => {
               <div className="w-full h-auto pb-[140%] relative inline-block overflow-hidden">
                 <button
                   className="absolute top-2 right-2 bg-black text-white px-3 py-2 bg-opacity-60 rounded-full text-sm z-10 font-extrabold hover:bg-white hover:text-black transition-all"
-                  onClick={() => removeFromWatchList(item.episodeId)}
+                  onClick={() => removeFromWatchList(item.episodeId, item.id)}
                 >
                   ✖
                 </button>
