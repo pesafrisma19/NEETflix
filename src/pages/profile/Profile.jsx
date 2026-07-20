@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt, faCrown } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt, faCrown, faEye } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import getAnimeInfo from "../../utils/getAnimeInfo.utils";
@@ -135,7 +135,7 @@ export default function Profile() {
           // Fetch from Supabase
           const [favRes, histRes] = await Promise.all([
             supabase.from('bookmarks_favorites').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-            supabase.from('watch_history').select('*').eq('user_id', user.id).order('watched_at', { ascending: false }).limit(10)
+            supabase.from('watch_history').select('*').eq('user_id', user.id).order('watched_at', { ascending: false }).limit(14)
           ]);
 
           const favItems = favRes.data || [];
@@ -358,15 +358,11 @@ export default function Profile() {
           {/* Action Buttons */}
           <div className="flex gap-3 pb-4 w-full md:w-auto mt-4 md:mt-0 flex-col md:flex-row">
              <button 
-               onClick={() => {
-                 const url = `${window.location.origin}/user/${profile?.username}`;
-                 navigator.clipboard.writeText(url);
-                 addToast("Link profil publik disalin!", "success");
-               }} 
-               className="px-4 py-2 bg-[#201F31] text-gray-300 hover:text-white border border-gray-700 rounded-xl font-semibold transition-colors flex items-center justify-center"
+               onClick={() => navigate(`/user/${profile?.username}`)}
+               className="px-4 py-2 bg-[#201F31] text-gray-300 hover:text-white border border-gray-700 rounded-xl font-semibold transition-colors flex items-center justify-center group"
              >
-               <FontAwesomeIcon icon={faShareAlt} className="mr-2" /> 
-               Bagikan Profil
+               <FontAwesomeIcon icon={faEye} className="mr-2 group-hover:text-[#ffbade] transition-colors" /> 
+               View Profile
              </button>
              
              {/* Upgrade VIP Button */}
@@ -484,16 +480,16 @@ export default function Profile() {
                         <p className="text-gray-400">Riwayat tontonan kosong</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
                         {history.map((item) => (
                           <div key={`hist-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/watch/${item.anime_id}?ep=${item.episode_id}`)}>
                             <div className="relative aspect-[3/4]">
                               <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-xs p-1 text-center font-bold">
-                                {item.episode_id?.match(/episode-(\d+)/i)?.[1] ? `Episode ${item.episode_id.match(/episode-(\d+)/i)[1]}` : item.episode_id}
+                              <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] md:text-xs p-1 text-center font-bold">
+                                {item.episode_id?.match(/episode-(\d+)/i)?.[1] ? `Ep ${item.episode_id.match(/episode-(\d+)/i)[1]}` : item.episode_id}
                               </div>
                             </div>
-                            <div className="p-2 truncate text-sm font-semibold text-center">{item.details?.title}</div>
+                            <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title}</div>
                           </div>
                         ))}
                       </div>
@@ -508,13 +504,13 @@ export default function Profile() {
                         <p className="text-gray-400">Belum ada anime favorit</p>
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
                         {watchlist.map((item) => (
                           <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/${item.anime_id}`)}>
                             <div className="relative aspect-[3/4]">
                               <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
                             </div>
-                            <div className="p-2 truncate text-sm font-semibold text-center">{item.details?.title}</div>
+                            <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title}</div>
                           </div>
                         ))}
                       </div>
