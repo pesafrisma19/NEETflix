@@ -3,6 +3,7 @@
 /* eslint-disable react/prop-types */
 import Hls from "hls.js";
 import { useEffect, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import Artplayer from "artplayer";
 import artplayerPluginChapter from "./artPlayerPluinChaper";
 import autoSkip from "./autoSkip";
@@ -65,6 +66,7 @@ export default function Player({
   episodeNum,
   streamInfo,
 }) {
+  const { id: paramSlug } = useParams();
   const artRef = useRef(null);
   const artInstanceRef = useRef(null);   // simpan instance art agar bisa switchUrl
   const prevEpisodeIdRef = useRef(null); // deteksi episode berubah vs ganti kualitas
@@ -88,7 +90,8 @@ export default function Player({
   // Save to Watch History Supabase
   useEffect(() => {
     const saveToWatchHistory = async () => {
-      if (!animeInfo?.id || !episodeId) return;
+      const activeId = paramSlug || animeInfo?.id;
+      if (!activeId || !episodeId) return;
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) return;
@@ -98,14 +101,14 @@ export default function Player({
           .from('watch_history')
           .delete()
           .eq('user_id', session.user.id)
-          .eq('anime_id', String(animeInfo.id));
+          .eq('anime_id', String(activeId));
           
         // Insert new history
         await supabase
           .from('watch_history')
           .insert({
             user_id: session.user.id,
-            anime_id: String(animeInfo.id),
+            anime_id: String(activeId),
             episode_id: String(episodeId),
             // watched_at is auto-generated timestamptz
           });
@@ -695,7 +698,7 @@ export default function Player({
       try {
         const continueWatching = JSON.parse(localStorage.getItem("continueWatching")) || [];
         const newEntry = {
-          id: animeInfo?.id,
+          id: paramSlug || animeInfo?.id,
           episodeId,
           episodeNum,
           adultContent: animeInfo?.adultContent,
