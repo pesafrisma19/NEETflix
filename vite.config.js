@@ -67,13 +67,13 @@ export default defineConfig({
         screenshots: [
           {
             src: '/homepage2.webp',
-            sizes: '1920x1080',
+            sizes: '1870x993',
             type: 'image/webp',
             form_factor: 'wide'
           },
           {
             src: '/watchpage2.webp',
-            sizes: '1920x1080',
+            sizes: '1882x988',
             type: 'image/webp',
             form_factor: 'wide'
           }
