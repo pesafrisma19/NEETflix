@@ -307,7 +307,7 @@ function WatchFilm() {
       
       <div className="w-full px-4 grid grid-cols-[minmax(0,75%),minmax(0,25%)] gap-x-6 max-[1200px]:flex flex-col mt-4">
         <div className="flex flex-col gap-y-7">
-            <CommentFilm targetId={id} episodeTitle={titleClean} />
+            <CommentFilm targetId={`${id}${epId ? `-${epId}` : ''}`} episodeTitle={titleClean} />
         </div>
         <div>
             {/* placeholder for sidebar related films */}

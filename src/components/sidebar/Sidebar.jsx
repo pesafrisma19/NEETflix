@@ -1,6 +1,6 @@
 import { FaChevronLeft } from "react-icons/fa";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilm, faRandom, faDragon } from "@fortawesome/free-solid-svg-icons";
+import { faFilm, faTv, faDragon } from "@fortawesome/free-solid-svg-icons";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -60,11 +60,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
           <div className="flex gap-x-7 w-full py-3 justify-center px-auto mt-8 bg-black/10 max-[575px]:gap-x-4 lg:hidden">
             {[
-              { icon: faRandom, label: "Random" },
-              { icon: faDragon, label: "Donghua" },
+              { icon: faTv, label: "Anime", path: "/home" },
+              { icon: faDragon, label: "Donghua", path: "/donghua" },
             ].map((item, index) => (
               <Link
-                to={`/${item.label}`}
+                to={item.path}
                 key={index}
                 className="flex flex-col gap-y-1 items-center"
               >

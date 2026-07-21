@@ -8,11 +8,9 @@
  *   { serverName, data_id, server_id, type, source }
  *
  * Saat ini: hanya AL.
- * Nanti: tambah OD, Gogoanime, dll di sini.
+ * Nanti: tambah sumber lain di sini saat sudah siap.
  */
 export default async function getServers(animeId, episodeId) {
-  // AL selalu dicoba — episode list sudah diambil via getEpisodes
-  // data_id "AL" = sinyal ke useWatch bahwa streaming lewat AL stream-by-title
   return [
     {
       serverName: "AL",
@@ -20,12 +18,6 @@ export default async function getServers(animeId, episodeId) {
       server_id: "al",
       type: "sub",
       // TIDAK ada field 'source' → agar masuk subServers di Servers.jsx (!s.source = true)
-    },
-    {
-      serverName: "OD",
-      data_id: "source-OD",
-      server_id: "od",
-      type: "sub",
     },
   ];
 }

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBars,
   faFilm,
-  faRandom,
+  faTv,
   faStar,
   faUser,
   faSignOutAlt,
@@ -104,11 +104,7 @@ function Navbar() {
     setIsSidebarOpen(false);
   };
 
-  const handleRandomClick = () => {
-    if (location.pathname === "/random") {
-      window.location.reload();
-    }
-  };
+
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -207,21 +203,14 @@ function Navbar() {
         {/* Menu Tengah / Kanan Khusus Desktop */}
         <div className="flex gap-x-7 items-center max-lg:hidden">
           {[
-            { icon: faRandom, label: "Random", path: "/random" },
+            { icon: faTv, label: "Anime", path: "/home" },
             { icon: faBookOpen, label: "Comic", path: "/comic" },
             { icon: faDragon, label: "Donghua", path: "/donghua" },
-            { icon: faStar, label: "FILM", path: "/film" },
+            { icon: faStar, label: "Film", path: "/film" },
           ].map((item) => (
             <Link
               key={item.path}
-              to={
-                item.path === "/random"
-                  ? location.pathname === "/random"
-                    ? "#"
-                    : "/random"
-                  : item.path
-              }
-              onClick={item.path === "/random" ? handleRandomClick : undefined}
+              to={item.path}
               className="flex flex-col gap-y-1 items-center cursor-pointer"
             >
               <FontAwesomeIcon

@@ -34,6 +34,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
   const isServerFetchInProgress = useRef(false);
   const isStreamFetchInProgress = useRef(false);
   const lastStreamKey = useRef(null); // guard: mencegah infinite loop saat servers diupdate
+  const serversRef = useRef(null); // ref untuk baca servers tanpa trigger re-render
 
   useEffect(() => {
     setEpisodes(null);
@@ -85,9 +86,17 @@ export const useWatch = (animeId, initialEpisodeId) => {
     return () => { mounted = false; };
   }, [animeId]);
 
+  // Sync serversRef agar stream effect bisa baca nilai terbaru tanpa masuk dep array
+  useEffect(() => {
+    serversRef.current = servers;
+  }, [servers]);
+
   // FETCH ANIME INFO & EPISODES (Re-run jika activeServerId / source berubah)
   useEffect(() => {
     if (!activeServerId) return; // Tunggu server diset dulu
+    // STREAM- prefix = pilihan kualitas (720p, 1080p, dst) — bukan pergantian sumber
+    // Tidak perlu re-fetch episode, cukup skip
+    if (activeServerId.startsWith("STREAM-")) return;
 
     const fetchInitialData = async () => {
       try {
@@ -217,7 +226,7 @@ export const useWatch = (animeId, initialEpisodeId) => {
       isStreamFetchInProgress.current = true;
       setBuffering(true);
       try {
-        const server = servers.find((srv) => srv.data_id === activeServerId);
+        const server = serversRef.current?.find((srv) => srv.data_id === activeServerId);
 
         // Hitung episode number LANGSUNG di sini — jangan pakai state activeEpisodeNum
         // karena bisa stale (null) saat effect pertama kali jalan
@@ -314,7 +323,8 @@ export const useWatch = (animeId, initialEpisodeId) => {
       }
     };
     fetchStreamInfo();
-  }, [episodeId, activeServerId, servers, animeInfo, episodes]);
+  // Catatan: 'servers' SENGAJA tidak ada di sini — diakses via serversRef untuk hindari re-trigger loop
+  }, [episodeId, activeServerId, animeInfo, episodes]);
 
   return {
     error,

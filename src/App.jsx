@@ -46,10 +46,11 @@ import { ToastProvider } from "./context/ToastContext";
 function App() {
   const location = useLocation();
 
-  // Scroll to top on location change
+  // Scroll to top HANYA saat berpindah halaman (pathname berubah)
+  // Tidak perlu scroll saat hanya query param yg berubah (misal ?ep=1)
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [location]);
+  }, [location.pathname]);
 
   // Bersihkan hash token dari URL setelah Google Login sukses
   useEffect(() => {

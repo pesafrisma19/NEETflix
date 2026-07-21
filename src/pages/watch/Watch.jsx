@@ -108,6 +108,10 @@ export default function Watch() {
     }
 
     const newUrl = `/watch/${paramSlug}?ep=${episodeId}`;
+    // Cek dulu apakah URL sudah sama — kalau iya, skip navigate() agar tidak re-trigger router
+    const currentUrl = window.location.pathname + window.location.search;
+    if (currentUrl === newUrl) return;
+
     if (isFirstSet.current) {
       navigate(newUrl, { replace: true });
       isFirstSet.current = false;
@@ -126,15 +130,6 @@ export default function Watch() {
       document.title = `${website_name} | Free anime streaming platform`;
     };
   }, [animeId]);
-
-  // Update URL query param ?ep=X dynamically
-  useEffect(() => {
-    if (activeEpisodeNum) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("ep", activeEpisodeNum);
-      window.history.replaceState({}, '', url.toString());
-    }
-  }, [activeEpisodeNum]);
 
   // Redirect if no episodes
   // Dihapus agar user tidak dipaksa kembali ke infoanime dan tetap bisa memilih server/sumber lain
@@ -169,6 +164,7 @@ export default function Watch() {
   useEffect(() => {
     let ro = null;
     let mo = null;
+    let resizeTimer = null;
 
     const episodesEl = () => document.querySelector(".episodes");
     const playerEl = () => document.querySelector(".player");
@@ -190,15 +186,21 @@ export default function Watch() {
       });
     };
 
+    // Debounce 150ms agar tidak terpicu berkali-kali saat player resize (mencegah layout shift)
+    const debouncedApplyHeight = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(applyHeight, 150);
+    };
+
     const ensureAndApply = () => {
       if (playerEl() && episodesEl()) {
         applyHeight();
         if (window.ResizeObserver) {
-          ro = new ResizeObserver(applyHeight);
+          ro = new ResizeObserver(debouncedApplyHeight);
           ro.observe(playerEl());
         } else {
-          window.addEventListener("resize", applyHeight);
-          mo = new MutationObserver(applyHeight);
+          window.addEventListener("resize", debouncedApplyHeight);
+          mo = new MutationObserver(debouncedApplyHeight);
           mo.observe(playerEl(), { attributes: true, childList: true, subtree: true });
         }
       } else {
@@ -215,14 +217,15 @@ export default function Watch() {
 
     ensureAndApply();
 
-    const onWindowResize = () => applyHeight();
+    const onWindowResize = () => debouncedApplyHeight();
     window.addEventListener("orientationchange", onWindowResize);
 
     return () => {
+      clearTimeout(resizeTimer);
       window.removeEventListener("orientationchange", onWindowResize);
       if (ro) ro.disconnect();
       if (mo) mo.disconnect();
-      window.removeEventListener("resize", applyHeight);
+      window.removeEventListener("resize", debouncedApplyHeight);
     };
   }, [buffering, episodes]);
 
@@ -692,7 +695,7 @@ export default function Watch() {
       </div>
       <div className="w-full px-4 grid grid-cols-[minmax(0,75%),minmax(0,25%)] gap-x-6 max-[1200px]:flex flex-col">
         <div className="mt-[15px] flex flex-col gap-y-7">
-          <CommentAnime targetId={episodeId} episodeTitle={`Episode ${activeEpisodeNum || episodeId}`} />
+          <CommentAnime targetId={`${animeId}-${episodeId}`} episodeTitle={`Episode ${activeEpisodeNum || episodeId}`} />
           {animeInfo?.charactersVoiceActors.length > 0 && (
             <Voiceactor animeInfo={animeInfo} className="!mt-0" />
           )}
