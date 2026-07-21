@@ -22,11 +22,20 @@ import ComicReader from "./pages/comic/ComicReader";
 import ComicSearch from "./pages/comic/ComicSearch";
 import ComicCategory from "./pages/comic/ComicCategory";
 import ComicGenre from "./pages/comic/ComicGenre";
+
+// Film Imports
 import FilmHome from "./pages/film/FilmHome";
 import FilmDetail from "./pages/film/FilmDetail";
 import WatchFilm from "./pages/film/WatchFilm";
 import FilmSearch from "./pages/film/FilmSearch";
 import FilmCategory from "./pages/film/FilmCategory";
+
+// Donghua Imports
+import DonghuaHome from "./pages/donghua/DonghuaHome";
+import DonghuaDetail from "./pages/donghua/DonghuaDetail";
+import WatchDonghua from "./pages/donghua/WatchDonghua";
+import DonghuaSearch from "./pages/donghua/DonghuaSearch";
+
 import Producer from "./components/producer/Producer";
 import SplashScreen from "./components/splashscreen/SplashScreen";
 import Profile from "./pages/profile/Profile";
@@ -77,6 +86,13 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/user/:username" element={<PublicProfile />} />
+            
+            {/* Donghua Routes */}
+            <Route path="/donghua" element={<DonghuaHome />} />
+            <Route path="/donghua/search" element={<DonghuaSearch />} />
+            <Route path="/donghua/:id" element={<DonghuaDetail />} />
+            <Route path="/donghua/watch/:id" element={<WatchDonghua />} />
+            
             <Route path="/:id" element={<AnimeInfo />} />
             <Route path="/watch/:id" element={<Watch />} />
             

@@ -47,6 +47,18 @@ function Suggestion({ keyword, className, type = "anime" }) {
                duration: "N/A"
              }));
           }
+        } else if (type === "donghua") {
+          const res = await axios.get(`${NEETFLIXAPI}/api/anichin/search?q=${encodeURIComponent(keyword)}`);
+          if (res.data?.success && res.data?.results) {
+             data = res.data.results.slice(0, 5).map(m => ({
+               id: m.id,
+               poster: m.image,
+               title: m.title,
+               releaseDate: m.releaseDate || "Donghua",
+               showType: "Donghua",
+               duration: "N/A"
+             }));
+          }
         }
         setSuggestion(data);
         setHasFetched(true);
@@ -63,12 +75,14 @@ function Suggestion({ keyword, className, type = "anime" }) {
   const getDetailLink = (item) => {
     if (type === "film") return `/film/${item.id}`;
     if (type === "comic") return `/comic/${item.id}`;
+    if (type === "donghua") return `/donghua/${item.id}`;
     return `/${formatSlug(item.title, item.id)}`;
   };
 
   const getViewAllLink = () => {
     if (type === "film") return `/film/search?keyword=${encodeURIComponent(keyword)}`;
     if (type === "comic") return `/comic/search?keyword=${encodeURIComponent(keyword)}`;
+    if (type === "donghua") return `/donghua/search?keyword=${encodeURIComponent(keyword)}`;
     return `/search?keyword=${encodeURIComponent(keyword)}`;
   };
 

@@ -8,7 +8,8 @@ import {
   faStar,
   faUser,
   faSignOutAlt,
-  faBookOpen
+  faBookOpen,
+  faDragon
 } from "@fortawesome/free-solid-svg-icons";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { Link, useLocation, useNavigate } from "react-router-dom";
@@ -208,7 +209,7 @@ function Navbar() {
           {[
             { icon: faRandom, label: "Random", path: "/random" },
             { icon: faBookOpen, label: "Comic", path: "/comic" },
-            { icon: faFilm, label: "Movie", path: "/movie" },
+            { icon: faDragon, label: "Donghua", path: "/donghua" },
             { icon: faStar, label: "FILM", path: "/film" },
           ].map((item) => (
             <Link

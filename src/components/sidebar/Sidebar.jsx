@@ -1,6 +1,6 @@
 import { FaChevronLeft } from "react-icons/fa";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFilm, faRandom } from "@fortawesome/free-solid-svg-icons";
+import { faFilm, faRandom, faDragon } from "@fortawesome/free-solid-svg-icons";
 import { useLanguage } from "@/src/context/LanguageContext";
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
@@ -61,7 +61,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex gap-x-7 w-full py-3 justify-center px-auto mt-8 bg-black/10 max-[575px]:gap-x-4 lg:hidden">
             {[
               { icon: faRandom, label: "Random" },
-              { icon: faFilm, label: "Movie" },
+              { icon: faDragon, label: "Donghua" },
             ].map((item, index) => (
               <Link
                 to={`/${item.label}`}
@@ -107,7 +107,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               { name: "Home", path: "/home" },
               { name: "Comic / Manga", path: "/comic" },
               { name: "FILM", path: "/film" },
-              { name: "Daftar Film", path: "/film/category/release" },
+              { name: "Donghua", path: "/donghua" },
               { name: "Most Popular", path: "/most-popular" },
               { name: "Movies", path: "/movie" },
               { name: "TV Series", path: "/tv" },

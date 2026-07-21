@@ -27,6 +27,8 @@ function WebSearch() {
                 navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
             } else if (location.pathname.startsWith('/film')) {
                 navigate(`/film/search?keyword=${encodeURIComponent(searchValue)}`);
+            } else if (location.pathname.startsWith('/donghua')) {
+                navigate(`/donghua/search?keyword=${encodeURIComponent(searchValue)}`);
             } else {
                 navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
             }
@@ -41,7 +43,8 @@ function WebSearch() {
                 placeholder={
                     location.pathname.startsWith('/comic') ? "Search komik..." :
                         location.pathname.startsWith('/film') ? "Search film..." :
-                            "Search anime..."
+                            location.pathname.startsWith('/donghua') ? "Search donghua..." :
+                                "Search anime..."
                 }
                 value={searchValue}
                 onChange={(e) => setSearchValue(e.target.value)}
@@ -63,6 +66,8 @@ function WebSearch() {
                                 navigate(`/comic/search?keyword=${encodeURIComponent(searchValue)}`);
                             } else if (location.pathname.startsWith('/film')) {
                                 navigate(`/film/search?keyword=${encodeURIComponent(searchValue)}`);
+                            } else if (location.pathname.startsWith('/donghua')) {
+                                navigate(`/donghua/search?keyword=${encodeURIComponent(searchValue)}`);
                             } else {
                                 navigate(`/search?keyword=${encodeURIComponent(searchValue)}`);
                             }
@@ -89,7 +94,7 @@ function WebSearch() {
                     <Suggestion 
                       keyword={debouncedValue} 
                       className="w-full" 
-                      type={location.pathname.startsWith('/comic') ? "comic" : location.pathname.startsWith('/film') ? "film" : "anime"} 
+                      type={location.pathname.startsWith('/comic') ? "comic" : location.pathname.startsWith('/film') ? "film" : location.pathname.startsWith('/donghua') ? "donghua" : "anime"} 
                     />
                 </div>
             )}

@@ -13,7 +13,7 @@ export default function FilmPlayer({ url, title, poster, onReady }) {
     const art = new Artplayer({
       container: artRef.current,
       url: url,
-      type: 'm3u8',
+      type: url.includes('.m3u8') ? 'm3u8' : 'mp4',
       title: title || 'Nonton Film',
       poster: poster,
       volume: 1,
@@ -73,6 +73,12 @@ export default function FilmPlayer({ url, title, poster, onReady }) {
           }
         })] : []),
       ],
+    });
+
+    art.on('ready', () => {
+        if (art.video) {
+            art.video.setAttribute('referrerpolicy', 'no-referrer');
+        }
     });
 
     if (onReady) {
