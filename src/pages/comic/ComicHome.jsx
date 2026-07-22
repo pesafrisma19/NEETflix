@@ -6,6 +6,7 @@ import ComicTrending from "@/src/components/comic/ComicTrending/Trending.jsx";
 import ComicCategoryCard from "@/src/components/comic/ComicCategoryCard/CategoryCard.jsx";
 import ComicGenre from "@/src/components/comic/ComicGenre/Genre.jsx";
 import ComicTopten from "@/src/components/comic/ComicTopten/Topten.jsx";
+import ContinueWatching from "@/src/components/continue/ContinueWatching";
 
 function ComicHome() {
   const [homeInfo, setHomeInfo] = useState(null);
@@ -39,6 +40,9 @@ function ComicHome() {
         {/* Spotlight / Hero Banner */}
         <ComicSpotlight spotlights={homeInfo.spotlights} />
         
+        {/* Continue Reading Section */}
+        <ContinueWatching mediaType="comic" />
+
         {/* Trending Slider */}
         <ComicTrending trending={homeInfo.trending} />
 

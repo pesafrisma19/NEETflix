@@ -364,26 +364,7 @@ function FilmDetail() {
             </div>
           )}
 
-          {data.isSeries && data.episodes && data.episodes.length > 0 && (
-            <div className="mt-8 flex flex-col gap-y-4">
-              <h1 className="w-fit text-2xl text-[#ffbade] max-[478px]:text-[18px] font-bold flex items-center gap-2">
-                Episodes
-              </h1>
 
-              <div className="grid grid-cols-4 max-[1200px]:grid-cols-3 max-[768px]:grid-cols-2 max-[480px]:grid-cols-1 gap-4">
-                {data.episodes.map((ep, index) => (
-                  <button
-                    key={index}
-                    onClick={() => navigate(`/film/watch/${id}?epId=${encodeURIComponent(ep.id)}`)}
-                    className="bg-[#2A2A38] hover:bg-[#ffbade] hover:text-black text-white p-4 rounded-xl text-left font-semibold transition-colors border border-[#3b3a52] line-clamp-1"
-                    title={ep.title}
-                  >
-                    {ep.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
         <div>
           {/* Sidecard placeholder if related film data becomes available */}

@@ -41,8 +41,8 @@ const KEY_CODES = {
   I: "KeyI",
   F: "KeyF",
   V: "KeyV",
-  SPACE: "Space", 
-  SPACE_LEGACY: "Spacebar", 
+  SPACE: "Space",
+  SPACE_LEGACY: "Spacebar",
   ARROW_UP: "ArrowUp",
   ARROW_DOWN: "ArrowDown",
   ARROW_RIGHT: "ArrowRight",
@@ -103,37 +103,37 @@ export default function Player({
           .eq('user_id', session.user.id)
           .eq('anime_id', String(activeId))
           .maybeSingle();
-          
+
         if (existing) {
-           await supabase
-             .from('watch_history')
-             .update({
-                episode_id: String(episodeId),
-                left_at: existing.episode_id === String(episodeId) ? existing.left_at : null,
-                watched_at: new Date(),
-                details: { title: animeInfo?.title, poster: animeInfo?.poster }
-             })
-             .eq('id', existing.id);
+          await supabase
+            .from('watch_history')
+            .update({
+              episode_id: String(episodeId),
+              left_at: existing.episode_id === String(episodeId) ? existing.left_at : null,
+              watched_at: new Date(),
+              details: { title: animeInfo?.title, poster: animeInfo?.poster }
+            })
+            .eq('id', existing.id);
         } else {
-           await supabase
-             .from('watch_history')
-             .insert({
-               user_id: session.user.id,
-               anime_id: String(activeId),
-               episode_id: String(episodeId),
-               details: { title: animeInfo?.title, poster: animeInfo?.poster }
-             });
+          await supabase
+            .from('watch_history')
+            .insert({
+              user_id: session.user.id,
+              anime_id: String(activeId),
+              episode_id: String(episodeId),
+              details: { title: animeInfo?.title, poster: animeInfo?.poster }
+            });
         }
       } catch (err) {
         console.error("Failed to save watch history to DB", err);
       }
     };
-    
+
     // Only run if it's a valid anime (wait 5 seconds to ensure they actually started watching)
     const timer = setTimeout(() => {
       saveToWatchHistory();
     }, 5000);
-    
+
     return () => clearTimeout(timer);
   }, [animeInfo, episodeId]);
 
@@ -314,7 +314,7 @@ export default function Player({
       const useProxy = m3u8proxy?.length > 0 && !m3u8proxy[0].includes("<m3u8_proxy");
       let switchTarget = streamUrl;
       let isM3u8 = streamUrl?.includes(".m3u8");
-      
+
       if (useProxy && isM3u8) {
         const headers = { referer: window.location.origin + "/" };
         switchTarget = m3u8proxy[Math.floor(Math.random() * m3u8proxy.length)] +
@@ -353,12 +353,12 @@ export default function Player({
     // Abaikan proxy jika proxy di .env belum di-setup (masih berbentuk <m3u8_proxy_server_name>)
     let isM3u8 = streamUrl?.includes(".m3u8");
     const useProxy = isM3u8 && m3u8proxy?.length > 0 && !m3u8proxy[0].includes("<m3u8_proxy");
-    
+
     const finalUrl = useProxy
       ? m3u8proxy[Math.floor(Math.random() * m3u8proxy.length)] +
-        encodeURIComponent(streamUrl) +
-        "&headers=" +
-        encodeURIComponent(JSON.stringify(headers))
+      encodeURIComponent(streamUrl) +
+      "&headers=" +
+      encodeURIComponent(JSON.stringify(headers))
       : streamUrl;
 
     let mediaType = isM3u8 ? "m3u8" : "mp4";
@@ -373,7 +373,7 @@ export default function Player({
       setting: true,
       playbackRate: true,
       pip: true,
-      hotkey: false, 
+      hotkey: false,
       fullscreen: true,
       mutex: true,
       playsInline: true,
@@ -606,7 +606,7 @@ export default function Player({
               .eq('anime_id', String(activeId))
               .eq('episode_id', String(episodeId));
           }
-        } catch (err) {}
+        } catch (err) { }
       });
 
       setTimeout(() => {
@@ -654,13 +654,13 @@ export default function Player({
       art.on("destroy", () => {
         try {
           document.removeEventListener("keydown", boundKeydown);
-        } catch (e) {}
+        } catch (e) { }
         try {
           container.removeEventListener("pointerdown", focusOnPointerDown);
-        } catch (e) {}
+        } catch (e) { }
         try {
           window.removeEventListener("focus", onWindowFocus);
-        } catch (e) {}
+        } catch (e) { }
       });
 
       art.subtitle.style({
@@ -733,7 +733,7 @@ export default function Player({
       const activeId = paramSlug || animeInfo?.id;
       const finalLeftAt = leftAtRef.current;
       const finalEpisodeId = episodeId;
-      
+
       const saveFinalLeftAt = async () => {
         if (!finalLeftAt) return;
         try {
@@ -746,7 +746,7 @@ export default function Player({
               .eq('anime_id', String(activeId))
               .eq('episode_id', String(finalEpisodeId));
           }
-        } catch (err) {}
+        } catch (err) { }
       };
       saveFinalLeftAt();
 
@@ -760,7 +760,7 @@ export default function Player({
       if (boundKeydownRef.current) {
         try {
           document.removeEventListener("keydown", boundKeydownRef.current);
-        } catch (e) {}
+        } catch (e) { }
         boundKeydownRef.current = null;
       }
       if (fullscreenRefocusTimeout) clearTimeout(fullscreenRefocusTimeout);
@@ -795,11 +795,11 @@ export default function Player({
 
   if (isIframe) {
     return (
-      <iframe 
-        src={streamUrl} 
-        className="w-full h-full border-none" 
-        allowFullScreen 
-        allow="autoplay" 
+      <iframe
+        src={streamUrl}
+        className="w-full h-full border-none"
+        allowFullScreen
+        allow="autoplay"
         sandbox="allow-scripts allow-same-origin allow-presentation"
       />
     );

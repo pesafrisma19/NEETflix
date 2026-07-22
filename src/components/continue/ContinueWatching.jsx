@@ -11,7 +11,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlay } from "@fortawesome/free-solid-svg-icons";
 import { supabase } from "@/src/lib/supabaseClient";
 
-const ContinueWatching = () => {
+const ContinueWatching = ({ mediaType = 'anime' }) => {
   const [watchList, setWatchList] = useState([]);
   const { language } = useLanguage();
   const swiperRef = useRef(null);
@@ -29,24 +29,33 @@ const ContinueWatching = () => {
             .select('*')
             .eq('user_id', session.user.id)
             .order('watched_at', { ascending: false })
-            .limit(10);
+            .limit(20);
             
           if (dbHistory && dbHistory.length > 0) {
-            const mappedDb = dbHistory.map(item => ({
+            let mappedDb = dbHistory.map(item => ({
               id: item.anime_id,
               episodeId: item.episode_id,
-              episodeNum: String(item.episode_id).replace('ep=', ''),
+              episodeNum: String(item.episode_id).replace('ep=', '').replace('chapter-', ''),
               poster: item.details?.poster,
               title: item.details?.title,
               leftAt: item.left_at,
+              mediaType: item.details?.mediaType || 'anime',
               updatedAt: new Date(item.watched_at).getTime()
             }));
+
+            if (mediaType && mediaType !== 'all') {
+              mappedDb = mappedDb.filter(item => (item.mediaType || 'anime') === mediaType);
+            }
             setWatchList(mappedDb);
             return;
           }
         }
         
-        setWatchList(localData);
+        let filteredLocal = localData;
+        if (mediaType && mediaType !== 'all') {
+          filteredLocal = localData.filter(item => (item.mediaType || 'anime') === mediaType);
+        }
+        setWatchList(filteredLocal);
       } catch (err) {
         console.error("Error fetching watch history", err);
       }
@@ -61,7 +70,7 @@ const ContinueWatching = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [mediaType]);
 
   // Memoize watchList to avoid unnecessary re-renders
   const memoizedWatchList = useMemo(() => watchList, [watchList]);
@@ -87,7 +96,63 @@ const ContinueWatching = () => {
     } catch (err) {}
   };
 
+  const getTargetUrl = (item) => {
+    const type = item.mediaType || 'anime';
+    if (type === 'comic') {
+      return `/comic/read/${item.episodeId || item.id}`;
+    }
+    if (type === 'film') {
+      return item.episodeId && item.episodeId !== item.id
+        ? `/film/watch/${item.id}?epId=${encodeURIComponent(item.episodeId)}`
+        : `/film/watch/${item.id}`;
+    }
+    if (type === 'donghua') {
+      return item.episodeId
+        ? `/donghua/watch/${item.id}?ep=${encodeURIComponent(item.episodeId)}`
+        : `/donghua/watch/${item.id}`;
+    }
+    return `/watch/${item.id}?ep=${item.episodeId}`;
+  };
+
+  const getDisplayTitle = (item) => {
+    if (!item) return '';
+    const type = item.mediaType || 'anime';
+    if (type === 'comic') {
+      if (!item.title || item.title.toLowerCase().startsWith('chapter') || item.title.includes('__')) {
+        if (item.id) {
+          const cleanId = String(item.id)
+            .replace(/^chapter-/, '')
+            .replace(/__\d+$/, '')
+            .replace(/-/g, ' ');
+          return cleanId.replace(/\b\w/g, c => c.toUpperCase());
+        }
+      }
+    }
+    return item.title || '';
+  };
+
+  const getEpisodeLabel = (item) => {
+    const type = item.mediaType || 'anime';
+    const epNum = item.episodeNum || item.episodeId || '';
+    if (type === 'comic') {
+      const numMatch = String(epNum).match(/(?:chapter[-_]|__|\s|^)(\d+)(?:[^\d]|$)/i);
+      const cleanNum = numMatch ? numMatch[1] : String(epNum).replace(/^chapter-/, '');
+      return `Chapter ${cleanNum}`;
+    }
+    if (type === 'film') {
+      if (!item.episodeId || item.episodeId === item.id) return 'Movie';
+      const numMatch = String(epNum).match(/(?:episode[-_]|ep[-_]|\s|^)(\d+)(?:[^\d]|$)/i);
+      const cleanNum = numMatch ? numMatch[1] : epNum;
+      return `Episode ${cleanNum}`;
+    }
+    const numMatch = String(epNum).match(/(?:episode[-_]|ep[-_]|\s|^)(\d+)(?:[^\d]|$)/i);
+    const cleanNum = numMatch ? numMatch[1] : epNum;
+    return `Episode ${cleanNum}`;
+  };
+
   if (memoizedWatchList.length === 0) return null;
+
+  const sectionTitle = mediaType === 'comic' ? 'Continue Reading' : 'Continue Watching';
 
   return (
     <div className="mt-6 max-[1200px]:px-6 max-md:px-0">
@@ -95,7 +160,7 @@ const ContinueWatching = () => {
         <div className="flex items-center gap-x-2 justify-center">
           <FaHistory className="text-[#ffbade]" />
           <h1 className="text-[#ffbade] text-2xl font-bold max-[450px]:text-xl max-[450px]:mb-1 max-[350px]:text-lg">
-            Continue Watching
+            {sectionTitle}
           </h1>
         </div>
 
@@ -142,15 +207,20 @@ const ContinueWatching = () => {
                 </button>
 
                 <Link
-                  to={`/watch/${item?.id}?ep=${item.episodeId}`}
+                  to={getTargetUrl(item)}
                   className="inline-block bg-[#2a2c31] absolute left-0 top-0 w-full h-full group"
                 >
                   <img
-                    src={`${item?.poster}`}
-                    alt={item?.title}
+                    src={item?.poster && !item.poster.startsWith('/api/image-proxy') ? item.poster : "https://via.placeholder.com/200x300?text=Komik"}
+                    alt={getDisplayTitle(item)}
+                    referrerPolicy="no-referrer"
                     className="block w-full h-full object-cover transition-all duration-300 ease-in-out group-hover:blur-[4px]"
-                    title={item?.title}
+                    title={getDisplayTitle(item)}
                     loading="lazy"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/200x300?text=Komik";
+                    }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <FontAwesomeIcon
@@ -167,11 +237,11 @@ const ContinueWatching = () => {
                 <div className="absolute bottom-0 left-0 flex flex-col gap-y-2 right-0 p-2 bg-gradient-to-t from-black via-black/80 to-transparent max-[450px]:gap-y-1">
                   <p className="text-white text-md font-bold text-left truncate max-[450px]:text-sm">
                     {language === "EN"
-                      ? item?.title
-                      : item?.japanese_title}
+                      ? getDisplayTitle(item)
+                      : item?.japanese_title || getDisplayTitle(item)}
                   </p>
                   <p className="text-gray-300 text-sm font-semibold text-left max-[450px]:text-[12px]">
-                    Episode {item.episodeNum}
+                    {getEpisodeLabel(item)}
                   </p>
                 </div>
               </div>

@@ -141,15 +141,61 @@ export default function Profile() {
           const favItems = favRes.data || [];
           const histItems = histRes.data || [];
 
-          // Fetch details from AniList
+          // Fetch details from AniList, Komiku, LK21, or Anichin
           const fetchDetails = async (items) => {
             return Promise.all(items.map(async (item) => {
-              try {
-                const info = await getAnimeInfo(item.anime_id);
-                return { ...item, details: info?.data };
-              } catch (e) {
+              if (item.details && item.details.title && item.details.poster) {
                 return item;
               }
+              const idStr = String(item.anime_id || '');
+
+              // 1. Try AniList Anime
+              try {
+                const info = await getAnimeInfo(idStr);
+                if (info?.data?.title && info?.data?.poster) {
+                  return { ...item, details: { title: info.data.title, poster: info.data.poster, mediaType: 'anime' } };
+                }
+              } catch (e) {}
+
+              // 2. Try Komiku
+              try {
+                const res = await fetch(`${import.meta.env.VITE_NEETFLIXAPI_URL}/api/komiku/info?id=${idStr}`);
+                if (res.ok) {
+                  const json = await res.json();
+                  const data = json.results || json.data || json;
+                  if (data?.title && data?.image) {
+                    return { ...item, details: { title: data.title, poster: data.image, mediaType: 'comic' } };
+                  }
+                }
+              } catch (e) {}
+
+              // 3. Try LK21 Film
+              try {
+                const res = await fetch(`${import.meta.env.VITE_NEETFLIXAPI_URL}/api/lk21/info?id=${idStr}`);
+                if (res.ok) {
+                  const json = await res.json();
+                  const data = json.results?.data || json.results || json;
+                  if (data?.title && data?.poster) {
+                    const titleClean = data.title.replace(/Nonton | Sub Indo di Lk21/g, "");
+                    return { ...item, details: { title: titleClean, poster: data.poster, mediaType: 'film' } };
+                  }
+                }
+              } catch (e) {}
+
+              // 4. Try Anichin Donghua
+              try {
+                const res = await fetch(`${import.meta.env.VITE_NEETFLIXAPI_URL}/api/anichin/info?id=${idStr}`);
+                if (res.ok) {
+                  const json = await res.json();
+                  const data = json.results || json;
+                  if (data?.title && data?.image) {
+                    return { ...item, details: { title: data.title, poster: data.image, mediaType: 'donghua' } };
+                  }
+                }
+              } catch (e) {}
+
+              const cleanTitle = idStr.replace(/^chapter-/, '').replace(/__\d+$/, '').replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+              return { ...item, details: { title: cleanTitle, poster: "https://via.placeholder.com/200x300?text=Favorit", mediaType: 'anime' } };
             }));
           };
 
@@ -159,7 +205,7 @@ export default function Profile() {
           ]);
 
           setWatchlist(favWithDetails.filter(i => i.details));
-          setHistory(histWithDetails.filter(i => i.details));
+          setHistory(histWithDetails.filter(i => i.details && (i.details.title || i.anime_id)));
           setKoleksiFetched(true);
         } catch (error) {
           console.error("Failed to fetch koleksi", error);
@@ -481,38 +527,86 @@ export default function Profile() {
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
-                        {history.map((item) => (
-                          <div key={`hist-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/watch/${item.anime_id}?ep=${item.episode_id}`)}>
-                            <div className="relative aspect-[3/4]">
-                              <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
-                              <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] md:text-xs p-1 text-center font-bold">
-                                {item.episode_id?.match(/episode-(\d+)/i)?.[1] ? `Ep ${item.episode_id.match(/episode-(\d+)/i)[1]}` : item.episode_id}
+                        {history.map((item) => {
+                          const mediaType = item.details?.mediaType || 'anime';
+                          let targetUrl = `/watch/${item.anime_id}?ep=${item.episode_id}`;
+                          if (mediaType === 'comic') {
+                            targetUrl = `/comic/read/${item.episode_id || item.anime_id}`;
+                          } else if (mediaType === 'film') {
+                            targetUrl = item.episode_id && item.episode_id !== item.anime_id
+                              ? `/film/watch/${item.anime_id}?epId=${encodeURIComponent(item.episode_id)}`
+                              : `/film/watch/${item.anime_id}`;
+                          } else if (mediaType === 'donghua') {
+                            targetUrl = `/donghua/watch/${item.anime_id}?ep=${encodeURIComponent(item.episode_id)}`;
+                          }
+
+                          const epStr = String(item.episode_id || '');
+                          let cleanEp = '';
+
+                          if (mediaType === 'film' && (!item.episode_id || item.episode_id === item.anime_id)) {
+                            cleanEp = 'Movie';
+                          } else {
+                            const match = epStr.match(/(?:episode|chapter|ep)[-_=\s]*(\d+)/i) 
+                              || epStr.match(/(?:__|_|-)(\d+)$/) 
+                              || epStr.match(/(\d+)/);
+                            if (match) {
+                              const num = parseInt(match[1], 10);
+                              cleanEp = isNaN(num) ? match[1] : String(num);
+                            } else {
+                              cleanEp = epStr.replace(/^chapter-|^episode-|^ep=/i, '');
+                            }
+                          }
+
+                          let label = '';
+                          if (cleanEp === 'Movie') {
+                            label = 'Movie';
+                          } else if (mediaType === 'comic') {
+                            label = `Ch. ${cleanEp}`;
+                          } else {
+                            label = `Ep ${cleanEp}`;
+                          }
+
+                          return (
+                            <div key={`hist-${item.anime_id}-${item.episode_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(targetUrl)}>
+                              <div className="relative aspect-[3/4]">
+                                <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] md:text-xs p-1 text-center font-bold truncate">
+                                  {label}
+                                </div>
                               </div>
+                              <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
                             </div>
-                            <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
 
                   {/* Watchlist */}
                   <div>
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faStar} /> Watchlist Anime</h2>
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faStar} /> Watchlist & Favorit</h2>
                     {watchlist.length === 0 ? (
                       <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
-                        <p className="text-gray-400">Belum ada anime favorit</p>
+                        <p className="text-gray-400">Belum ada tayangan / komik favorit di Watchlist</p>
                       </div>
                     ) : (
                       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
-                        {watchlist.map((item) => (
-                          <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(`/${item.anime_id}`)}>
-                            <div className="relative aspect-[3/4]">
-                              <img src={item.details?.poster} alt={item.details?.title} className="w-full h-full object-cover" />
+                        {watchlist.map((item) => {
+                          const mediaType = item.details?.mediaType || 'anime';
+                          let targetUrl = `/${item.anime_id}`;
+                          if (mediaType === 'comic') targetUrl = `/comic/${item.anime_id}`;
+                          else if (mediaType === 'film') targetUrl = `/film/${item.anime_id}`;
+                          else if (mediaType === 'donghua') targetUrl = `/donghua/${item.anime_id}`;
+
+                          return (
+                            <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all" onClick={() => navigate(targetUrl)}>
+                              <div className="relative aspect-[3/4]">
+                                <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                              </div>
+                              <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
                             </div>
-                            <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

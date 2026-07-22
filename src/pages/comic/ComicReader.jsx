@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
 import CommentComic from "../../components/commentcomic/CommentComic";
+import { supabase } from "@/src/lib/supabaseClient";
 
 function ComicReader() {
   const { chapterId } = useParams();
@@ -43,7 +44,88 @@ function ComicReader() {
         const data = await res.json();
         
         const resData = data.results || data.data || data;
-        setImages(resData.images || []);
+        const fetchedImages = resData.images || [];
+        setImages(fetchedImages);
+
+        // Save read history
+        const cleanComicId = comicId || String(chapterId)
+          .replace(/^chapter-/, '')
+          .replace(/__\d+$/, '')
+          .replace(/-chapter-\d+.*$/i, '');
+
+        const chNumMatch = String(chapterId).match(/(?:chapter[-_]|__|\s|^)(\d+)(?:[^\d]|$)/i) 
+          || (chaptersList[currentIndex]?.title || '').match(/(\d+)/);
+        const cleanChapterNum = chNumMatch ? chNumMatch[1] : chapterId;
+
+        let comicTitle = location.state?.title || "";
+        let comicPoster = location.state?.poster || "";
+
+        if ((!comicTitle || !comicPoster) && cleanComicId) {
+          try {
+            const infoRes = await fetch(`${import.meta.env.VITE_NEETFLIXAPI_URL}/api/komiku/info?id=${cleanComicId}`);
+            if (infoRes.ok) {
+              const infoData = await infoRes.json();
+              const resInfo = infoData.results || infoData.data || infoData;
+              if (resInfo?.image && !comicPoster) comicPoster = resInfo.image;
+              if (resInfo?.title && !comicTitle) comicTitle = resInfo.title;
+            }
+          } catch (e) {}
+        }
+
+        if (!comicTitle) {
+          comicTitle = cleanComicId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        }
+
+        const newEntry = {
+          id: cleanComicId,
+          episodeId: chapterId,
+          episodeNum: cleanChapterNum,
+          title: comicTitle,
+          poster: comicPoster,
+          mediaType: 'comic',
+          updatedAt: Date.now()
+        };
+
+        try {
+          const continueWatching = JSON.parse(localStorage.getItem("continueWatching")) || [];
+          const filtered = continueWatching.filter((item) => item.id !== cleanComicId);
+          filtered.unshift(newEntry);
+          localStorage.setItem("continueWatching", JSON.stringify(filtered));
+        } catch (err) {}
+
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            const { data: existing } = await supabase
+              .from('watch_history')
+              .select('id')
+              .eq('user_id', session.user.id)
+              .eq('anime_id', String(cleanComicId))
+              .maybeSingle();
+
+            if (existing) {
+              await supabase
+                .from('watch_history')
+                .update({
+                  episode_id: String(chapterId),
+                  watched_at: new Date(),
+                  details: { title: comicTitle, poster: comicPoster, mediaType: 'comic' }
+                })
+                .eq('id', existing.id);
+            } else {
+              await supabase
+                .from('watch_history')
+                .insert({
+                  user_id: session.user.id,
+                  anime_id: String(cleanComicId),
+                  episode_id: String(chapterId),
+                  watched_at: new Date(),
+                  details: { title: comicTitle, poster: comicPoster, mediaType: 'comic' }
+                });
+            }
+          }
+        } catch (err) {}
+
       } catch (err) {
         setError(err.message);
       } finally {

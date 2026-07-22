@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import FilmSpotlight from '../../components/film/FilmSpotlight';
 import FilmGenre from '../../components/film/FilmGenre';
 import { FaChevronRight } from 'react-icons/fa';
+import ContinueWatching from '../../components/continue/ContinueWatching';
 
 const FILM_GENRES = [
   "Action", "Adventure", "Animation", "Biography", "Comedy", 
@@ -119,6 +120,8 @@ function FilmHome() {
   return (
     <div className="px-4 w-full max-[1200px]:px-0">
       <FilmSpotlight spotlights={data.filmTerbaru.slice(0, 5)} />
+      
+      <ContinueWatching mediaType="film" />
       
       <div className="w-full grid grid-cols-[minmax(0,75%),minmax(0,25%)] gap-x-6 max-[1200px]:flex flex-col max-[1200px]:px-4">
         <div>

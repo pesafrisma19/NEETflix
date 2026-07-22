@@ -3,14 +3,20 @@ import { useParams, Link } from 'react-router-dom';
 import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlay } from "@fortawesome/free-solid-svg-icons";
+import { faPlay, faBookmark } from "@fortawesome/free-solid-svg-icons";
+import { supabase } from "@/src/lib/supabaseClient";
+import { useToast } from "@/src/context/ToastContext";
 
 function ComicDetail() {
   const { id } = useParams();
+  const { addToast } = useToast();
   const [comic, setComic] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [user, setUser] = useState(null);
+  const [isInWatchlist, setIsInWatchlist] = useState(false);
+  const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -28,12 +34,73 @@ function ComicDetail() {
     };
     fetchDetail();
     window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user);
+        checkWatchlist(session.user.id);
+      }
+    };
+    checkUser();
   }, [id]);
+
+  const checkWatchlist = async (userId) => {
+    if (!id) return;
+    try {
+      const { data } = await supabase
+        .from('bookmarks_favorites')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('anime_id', String(id))
+        .maybeSingle();
+
+      setIsInWatchlist(!!data);
+    } catch (err) {}
+  };
+
+  const handleWatchlistToggle = async () => {
+    if (!user) {
+      addToast("Silakan login terlebih dahulu untuk menambahkan ke Watchlist!", "error");
+      return;
+    }
+    if (!comic) return;
+
+    setIsWatchlistLoading(true);
+    try {
+      if (isInWatchlist) {
+        const { error } = await supabase
+          .from('bookmarks_favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('anime_id', String(id));
+
+        if (error) throw error;
+        setIsInWatchlist(false);
+        addToast("Berhasil dihapus dari Watchlist!", "success");
+      } else {
+        const { error } = await supabase
+          .from('bookmarks_favorites')
+          .insert({
+            user_id: user.id,
+            anime_id: String(id),
+            type: 'bookmark'
+          });
+
+        if (error) throw error;
+        setIsInWatchlist(true);
+        addToast("Berhasil ditambahkan ke Watchlist!", "success");
+      }
+    } catch (err) {
+      addToast("Gagal mengupdate Watchlist!", "error");
+    } finally {
+      setIsWatchlistLoading(false);
+    }
+  };
 
   if (loading) return <Loader type="animeInfo" />;
   if (error) return <Error error={error} />;
   if (!comic) return <Error error="404" />;
-  if (!comic) return <div className="text-center py-20 text-white">Comic Not Found</div>;
 
   return (
     <div className="min-h-screen pt-[64px] bg-[#191826] text-white">
@@ -75,17 +142,24 @@ function ComicDetail() {
               {comic.synopsis}
             </div>
 
-            <div className="mt-4">
+            <div className="mt-4 flex flex-wrap gap-4 items-center">
               {comic.chapters && comic.chapters.length > 0 && (
                 <Link
                   to={`/comic/read/${comic.chapters[comic.chapters.length - 1].id}`}
-                  state={{ chapters: comic.chapters, comicId: comic.id }}
+                  state={{ chapters: comic.chapters, comicId: comic.id, title: comic.title, poster: comic.image }}
                   className="flex gap-x-2 px-6 py-2 bg-[#FFBADE] w-fit text-black items-center rounded-3xl hover:opacity-90 transition-opacity shadow-md"
                 >
                   <FontAwesomeIcon icon={faPlay} className="text-[14px] mt-[1px]" />
                   <p className="text-lg font-medium">Baca Chapter 1</p>
                 </Link>
               )}
+              <button
+                onClick={handleWatchlistToggle}
+                disabled={isWatchlistLoading}
+                className="flex gap-x-2 px-6 py-2 bg-white w-fit text-black items-center rounded-3xl font-bold hover:bg-gray-200 transition-colors shadow-md disabled:opacity-50"
+              >
+                <p className="text-lg">{isInWatchlist ? "✓ In Watchlist" : "+ Add to Watchlist"}</p>
+              </button>
             </div>
           </div>
         </div>
@@ -108,7 +182,7 @@ function ComicDetail() {
             <Link
               key={ch.id}
               to={`/comic/read/${ch.id}`}
-              state={{ chapters: comic.chapters, comicId: comic.id }}
+              state={{ chapters: comic.chapters, comicId: comic.id, title: comic.title, poster: comic.image }}
               className="flex justify-between items-center p-4 bg-[#201F31] border border-[#2d2c3e] hover:border-[#ffbade] rounded-lg transition-all"
             >
               <span className="font-semibold">{ch.title}</span>

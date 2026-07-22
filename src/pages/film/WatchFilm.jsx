@@ -10,6 +10,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faList } from '@fortawesome/free-solid-svg-icons';
 import { FaWhatsapp, FaLink } from 'react-icons/fa';
 import website_name from "@/src/config/website";
+import { supabase } from "@/src/lib/supabaseClient";
 
 const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
 
@@ -93,9 +94,11 @@ function WatchFilm() {
         setLoading(true);
         // Fetch Info to get title and poster
         const infoRes = await axios.get(`${NEETFLIXAPI}/api/lk21/info?id=${id}`);
+        let filmInfo = null;
         if (infoRes.data?.success) {
-            setInfoData(infoRes.data.results.data);
-            document.title = `Nonton ${infoRes.data.results.data.title.replace(/Nonton | Sub Indo di Lk21/g, "")} - LK21 NEETflix`;
+            filmInfo = infoRes.data.results.data;
+            setInfoData(filmInfo);
+            document.title = `Nonton ${filmInfo.title.replace(/Nonton | Sub Indo di Lk21/g, "")} - LK21 NEETflix`;
         }
 
         // Fetch Stream
@@ -104,6 +107,61 @@ function WatchFilm() {
         
         if (res.data?.success) {
           setStreamData(res.data.results.data);
+
+          if (filmInfo) {
+            const titleClean = filmInfo.title?.replace(/Nonton | Sub Indo di Lk21/g, "") || id;
+            const posterUrl = filmInfo.poster || "";
+
+            const newEntry = {
+              id: id,
+              episodeId: epId || id,
+              episodeNum: epId ? 'Series' : 'Movie',
+              title: titleClean,
+              poster: posterUrl,
+              mediaType: 'film',
+              updatedAt: Date.now()
+            };
+
+            try {
+              const continueWatching = JSON.parse(localStorage.getItem("continueWatching")) || [];
+              const filtered = continueWatching.filter((item) => item.id !== id);
+              filtered.unshift(newEntry);
+              localStorage.setItem("continueWatching", JSON.stringify(filtered));
+            } catch (err) {}
+
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session) {
+                const { data: existing } = await supabase
+                  .from('watch_history')
+                  .select('id')
+                  .eq('user_id', session.user.id)
+                  .eq('anime_id', String(id))
+                  .maybeSingle();
+
+                if (existing) {
+                  await supabase
+                    .from('watch_history')
+                    .update({
+                      episode_id: String(epId || id),
+                      watched_at: new Date(),
+                      details: { title: titleClean, poster: posterUrl, mediaType: 'film' }
+                    })
+                    .eq('id', existing.id);
+                } else {
+                  await supabase
+                    .from('watch_history')
+                    .insert({
+                      user_id: session.user.id,
+                      anime_id: String(id),
+                      episode_id: String(epId || id),
+                      watched_at: new Date(),
+                      details: { title: titleClean, poster: posterUrl, mediaType: 'film' }
+                    });
+                }
+              }
+            } catch (err) {}
+          }
         } else {
           setError("Failed to fetch streaming URL");
         }

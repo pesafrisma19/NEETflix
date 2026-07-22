@@ -76,9 +76,9 @@ export default function FilmPlayer({ url, title, poster, onReady }) {
     });
 
     art.on('ready', () => {
-        if (art.video) {
-            art.video.setAttribute('referrerpolicy', 'no-referrer');
-        }
+      if (art.video) {
+        art.video.setAttribute('referrerpolicy', 'no-referrer');
+      }
     });
 
     if (onReady) {

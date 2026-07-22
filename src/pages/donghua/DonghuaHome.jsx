@@ -5,6 +5,7 @@ import Error from '../../components/error/Error';
 import DonghuaSpotlight from '../../components/donghua/DonghuaSpotlight';
 import DonghuaTrending from '../../components/donghua/DonghuaTrending';
 import DonghuaCategoryCard from '../../components/donghua/DonghuaCategoryCard';
+import ContinueWatching from '../../components/continue/ContinueWatching';
 
 const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
 
@@ -44,6 +45,8 @@ function DonghuaHome() {
     <div className="px-4 w-full max-[1200px]:px-0">
       <DonghuaSpotlight spotlights={recommendations.slice(0, 8)} />
       
+      <ContinueWatching mediaType="donghua" />
+
       <DonghuaTrending trending={recommendations} />
       
       <div className="w-full mt-[60px] pb-10 max-[1200px]:px-4">
