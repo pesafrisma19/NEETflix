@@ -33,7 +33,7 @@ export default function LiveChatWidget() {
 
   const handleDeleteLiveChat = async (msgId) => {
     try {
-      const { error } = await supabase.from("live_chats").delete().eq("id", msgId);
+      const { error } = await supabase.from("live_chat").delete().eq("id", msgId);
       if (error) throw error;
       addToast("Pesan berhasil dihapus", "success");
       setDeleteConfirmId(null);
