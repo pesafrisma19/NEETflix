@@ -823,7 +823,7 @@ export default function Profile() {
           {activeTab === "riwayat" && (
             <div className="space-y-8 text-left">
               {/* Category Filter Pills */}
-              <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-fit overflow-x-auto">
+              <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-full max-w-full overflow-x-auto custom-scrollbar flex-nowrap">
                 {[
                   { id: "all", label: "Semua Kategori" },
                   { id: "anime", label: "📺 Anime" },
@@ -999,7 +999,7 @@ export default function Profile() {
           {activeTab === "koleksi" && (
             <div className="space-y-6 text-left">
               {/* Sub Tabs */}
-              <div className="flex gap-3 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-fit overflow-x-auto">
+              <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-full max-w-full overflow-x-auto custom-scrollbar flex-nowrap">
                 {[
                   { id: "bingkai", label: "🖼️ Bingkai Avatar" },
                   { id: "gelar", label: "🏷️ Gelar Spesial" },

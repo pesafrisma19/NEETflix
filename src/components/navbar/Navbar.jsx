@@ -167,7 +167,7 @@ function Navbar() {
                   <img 
                     src={profileData?.avatar_url || user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || 'User'}&background=ffbade&color=000`} 
                     alt="Avatar" 
-                    className="w-7 h-7 rounded-full border border-[#ffbade] object-cover" 
+                    className={`w-7 h-7 rounded-full object-cover bg-[#201F31] ${getAvatarFrameClass(profileData?.level || 1, profileData?.is_vip, profileData?.customs)}`} 
                   />
                 </div>
               ) : (
