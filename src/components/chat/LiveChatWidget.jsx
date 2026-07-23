@@ -313,8 +313,8 @@ export default function LiveChatWidget() {
 
                     <div className="flex flex-col max-w-[78%] min-w-[50%]">
                       {/* Info Pengirim (Nama & 3-Dots Menu) */}
-                      <div className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-center justify-between w-full gap-2">
+                      <div className={`flex flex-col mb-1 ${isMe ? "items-end text-right" : "items-start text-left"}`}>
+                        <div className={`flex items-center gap-2 w-full ${isMe ? "flex-row-reverse justify-start" : "flex-row justify-between"}`}>
                           <span className="text-xs font-bold truncate" style={{ color: meta?.nameColor || "#cccccc" }}>
                             {isAnon ? "Anonim" : msg.profiles?.display_name || msg.profiles?.username || "Anime Fan"}
                           </span>
@@ -331,7 +331,7 @@ export default function LiveChatWidget() {
                               </button>
 
                               {activeMenuId === msg.id && (
-                                <div className="absolute right-0 top-5 w-28 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs">
+                                <div className="absolute right-0 top-5 w-28 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs text-left">
                                   <button 
                                     onClick={() => { handleDeleteLiveChat(msg.id); setActiveMenuId(null); }}
                                     className="w-full text-left px-3 py-1.5 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-1.5 text-[11px]"
@@ -345,7 +345,7 @@ export default function LiveChatWidget() {
                         </div>
 
                         {/* Second Row: Level/Title on left, WhatsApp date on right */}
-                        <div className="flex items-center justify-between w-full mt-0.5 text-[10px] text-gray-400 gap-2">
+                        <div className={`flex items-center gap-2 w-full mt-0.5 text-[10px] text-gray-400 ${isMe ? "flex-row-reverse justify-start" : "flex-row justify-between"}`}>
                           {!isAnon && meta ? (
                             <span className="text-[9px] font-bold text-[#ffbade] truncate">
                               Lv.{meta.level} • {meta.title}
