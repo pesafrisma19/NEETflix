@@ -1,5 +1,29 @@
 import { supabase } from "../lib/supabaseClient";
 
+export const formatWhatsAppDate = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  
+  const yesterday = new Date();
+  yesterday.setDate(now.getDate() - 1);
+  const isYesterday = date.toDateString() === yesterday.toDateString();
+
+  const timeStr = date.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+  if (isToday) {
+    return `Hari ini, ${timeStr}`;
+  }
+  if (isYesterday) {
+    return `Kemarin, ${timeStr}`;
+  }
+
+  return date.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+};
+
 export const getRankTitle = (level) => {
   if (level >= 999) return "NEETflix Lovers 👑";
   if (level >= 800) return "Kami-sama";

@@ -183,7 +183,7 @@ function Navbar() {
                     <img 
                       src={profileData?.avatar_url || user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || 'User'}&background=ffbade&color=000`} 
                       alt="Avatar" 
-                      className="w-8 h-8 rounded-full border border-gray-600 object-cover flex-shrink-0" 
+                      className={`w-8 h-8 rounded-full object-cover flex-shrink-0 bg-[#201F31] ${getAvatarFrameClass(profileData?.level || 1, profileData?.is_vip, profileData?.customs)}`} 
                     />
                     <div className="overflow-hidden">
                       <p className="text-xs font-bold text-white truncate">{profileData?.display_name || user.user_metadata?.full_name || "User"}</p>
@@ -277,7 +277,7 @@ function Navbar() {
                   <img 
                     src={profileData?.avatar_url || user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || 'User'}&background=ffbade&color=000`} 
                     alt="Avatar" 
-                    className="w-10 h-10 rounded-full border border-gray-600 object-cover flex-shrink-0" 
+                    className={`w-10 h-10 rounded-full object-cover flex-shrink-0 bg-[#201F31] ${getAvatarFrameClass(profileData?.level || 1, profileData?.is_vip, profileData?.customs)}`} 
                   />
                   <div className="overflow-hidden">
                     <p className="text-sm font-bold text-white truncate">{profileData?.display_name || user.user_metadata?.full_name || "User"}</p>

@@ -7,7 +7,9 @@ import { Link } from "react-router-dom";
 import BouncingLoader from "@/src/components/ui/bouncingloader/Bouncingloader";
 import AuthModal from "@/src/components/auth/AuthModal";
 import { useToast } from "@/src/context/ToastContext";
-import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp } from "@/src/utils/xp.utils";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEllipsisV } from "@fortawesome/free-solid-svg-icons";
+import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp, formatWhatsAppDate } from "@/src/utils/xp.utils";
 
 export default function CommentComic({ targetId, episodeTitle }) {
   const { addToast } = useToast();
@@ -21,6 +23,10 @@ export default function CommentComic({ targetId, episodeTitle }) {
   const [submitting, setSubmitting] = useState(false);
   const [replyTo, setReplyTo] = useState(null); // stores comment id to reply to
   const [sortBy, setSortBy] = useState("Terbaru"); // Terbaru, Terlama
+
+  const [activeMenuId, setActiveMenuId] = useState(null);
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editContent, setEditContent] = useState("");
 
   useEffect(() => {
     fetchSession();
@@ -199,6 +205,32 @@ export default function CommentComic({ targetId, episodeTitle }) {
     setComments(comments.map(updateLikes));
   };
 
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus komentar ini?")) return;
+    try {
+      const { error } = await supabase.from("comments").delete().eq("id", commentId);
+      if (error) throw error;
+      addToast("Komentar berhasil dihapus", "success");
+      fetchComments();
+    } catch (err) {
+      addToast("Gagal menghapus komentar: " + err.message, "error");
+    }
+  };
+
+  const handleSaveEditComment = async (commentId) => {
+    if (!editContent.trim()) return;
+    try {
+      const { error } = await supabase.from("comments").update({ content: editContent }).eq("id", commentId);
+      if (error) throw error;
+      addToast("Komentar berhasil diperbarui", "success");
+      setEditingCommentId(null);
+      setEditContent("");
+      fetchComments();
+    } catch (err) {
+      addToast("Gagal memperbarui komentar: " + err.message, "error");
+    }
+  };
+
   const renderCommentItem = (comment, isReply = false) => {
     const isLiked = comment.comment_likes?.some(l => l.user_id === currentUser?.id);
     const likeCount = comment.comment_likes?.length || 0;
@@ -207,47 +239,100 @@ export default function CommentComic({ targetId, episodeTitle }) {
     const rankTitle = getRankTitle(authorLevel);
     const avatarUrl = comment.profiles?.avatar_url || "https://i.pinimg.com/736x/c0/74/9b/c0749b7cc401421662ae901ec8f9f660.jpg";
     const frameClass = getAvatarFrameClass(authorLevel, comment.profiles?.is_vip);
+    const isOwner = currentUser?.id === comment.user_id;
 
     return (
-      <div className={`flex gap-x-4 ${isReply ? 'ml-12 mt-4' : 'mt-6'}`}>
-        <Link to={`/user/${comment.profiles?.username}`}>
-          <img src={avatarUrl} alt="avatar" className={`w-10 h-10 rounded-full object-cover shrink-0 ${frameClass}`} />
+      <div key={comment.id} className={`flex gap-x-3.5 ${isReply ? 'ml-10 mt-4' : 'mt-6'}`}>
+        {/* Avatar with VIP Crown on top & VIP badge below */}
+        <Link to={`/user/${comment.profiles?.username}`} className="relative shrink-0 self-start mt-1">
+          {comment.profiles?.is_vip && (
+            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-sm z-10 drop-shadow">
+              👑
+            </span>
+          )}
+          <img src={avatarUrl} alt="avatar" className={`w-10 h-10 rounded-full object-cover ${frameClass}`} />
+          {comment.profiles?.is_vip && (
+            <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.2 text-[8px] font-black rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white border border-purple-400 shadow-md">
+              VIP
+            </span>
+          )}
         </Link>
-        <div className="flex flex-col w-full">
-          <div className="flex items-center gap-x-2 flex-wrap">
-            <Link to={`/profile/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors flex items-center gap-1">
-              {authorName}
-              {comment.profiles?.is_vip && (
-                <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm border border-yellow-400">
-                  VIP 👑
-                </span>
-              )}
-            </Link>
-            <span className="text-[12px] text-gray-400">
-              Level {authorLevel} - {rankTitle}
-            </span>
-            <span className="text-[12px] text-gray-500">•</span>
-            <span className="text-[12px] text-gray-500">
-              {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true, locale: id })}
-            </span>
-          </div>
 
-          <div className="mt-1 text-[14px] text-gray-200 break-words">
-            {comment.is_spoiler ? (
-              <div
-                className="bg-[#2A2A38] text-gray-400 p-2 rounded cursor-pointer text-center text-sm border border-[#3A3A48] hover:border-[#ffbade] transition-colors"
-                onClick={(e) => {
-                  e.currentTarget.textContent = comment.content;
-                  e.currentTarget.className = "whitespace-pre-wrap";
-                  e.currentTarget.onclick = null;
-                }}
-              >
-                Komentar ini mengandung spoiler. Klik untuk melihat.
+        <div className="flex flex-col w-full text-left">
+          {/* Top Row: Username + 3-Dots Menu */}
+          <div className="flex items-center justify-between gap-2">
+            <Link to={`/user/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors text-sm truncate">
+              {authorName}
+            </Link>
+
+            {/* 3-Dots Action Button & Dropdown Menu */}
+            {isOwner && (
+              <div className="relative">
+                <button 
+                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === comment.id ? null : comment.id); }}
+                  className="text-gray-400 hover:text-white p-1 text-xs"
+                  title="Pilihan"
+                >
+                  <FontAwesomeIcon icon={faEllipsisV} />
+                </button>
+
+                {activeMenuId === comment.id && (
+                  <div className="absolute right-0 top-6 w-32 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs">
+                    <button 
+                      onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); setActiveMenuId(null); }}
+                      className="w-full text-left px-3 py-2 text-gray-300 hover:bg-[#ffbade]/20 hover:text-[#ffbade] font-semibold flex items-center gap-2"
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button 
+                      onClick={() => { handleDeleteComment(comment.id); setActiveMenuId(null); }}
+                      className="w-full text-left px-3 py-2 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-2"
+                    >
+                      🗑️ Hapus
+                    </button>
+                  </div>
+                )}
               </div>
-            ) : (
-              <p className="whitespace-pre-wrap">{comment.content}</p>
             )}
           </div>
+
+          {/* Second Row: Level & Rank Title on left | WhatsApp date on right */}
+          <div className="flex items-center justify-between text-[11px] text-gray-400 mt-0.5">
+            <span>Lvl {authorLevel} • {rankTitle}</span>
+            <span className="text-gray-500">{formatWhatsAppDate(comment.created_at)}</span>
+          </div>
+
+          {/* Comment Content / Edit Mode */}
+          {editingCommentId === comment.id ? (
+            <div className="mt-2 flex flex-col gap-2">
+              <textarea 
+                value={editContent} 
+                onChange={(e) => setEditContent(e.target.value)} 
+                className="w-full bg-[#11101A] text-white p-2 rounded-lg border border-[#ffbade] text-xs min-h-[60px]"
+              />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setEditingCommentId(null)} className="px-3 py-1 text-xs text-gray-400 hover:text-white font-semibold">Batal</button>
+                <button onClick={() => handleSaveEditComment(comment.id)} className="px-3 py-1 text-xs bg-[#ffbade] text-black font-bold rounded-lg hover:bg-[#ff99cc]">Simpan</button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 text-[13px] text-gray-200 break-words">
+              {comment.is_spoiler ? (
+                <div
+                  className="bg-[#2A2A38] text-gray-400 p-2 rounded cursor-pointer text-center text-xs border border-[#3A3A48] hover:border-[#ffbade] transition-colors"
+                  onClick={(e) => {
+                    e.currentTarget.textContent = comment.content;
+                    e.currentTarget.className = "whitespace-pre-wrap";
+                    e.currentTarget.onclick = null;
+                  }}
+                >
+                  Komentar ini mengandung spoiler. Klik untuk melihat.
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap">{comment.content}</p>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-x-4 mt-2">
             {!isReply && (

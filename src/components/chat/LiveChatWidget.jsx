@@ -2,12 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle, faVideo } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle, faVideo, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import EmojiPicker from "emoji-picker-react";
-import { formatDistanceToNow } from "date-fns";
-import { id as localeId } from "date-fns/locale";
-import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp } from "../../utils/xp.utils";
+import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp, formatWhatsAppDate } from "../../utils/xp.utils";
 
 export default function LiveChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +18,19 @@ export default function LiveChatWidget() {
   const [userMeta, setUserMeta] = useState({});
   const [replyTo, setReplyTo] = useState(null);
   const [showVideoBg, setShowVideoBg] = useState(true);
+  const [activeMenuId, setActiveMenuId] = useState(null);
+
+  const handleDeleteLiveChat = async (msgId) => {
+    if (!window.confirm("Apakah Anda yakin ingin menghapus pesan ini?")) return;
+    try {
+      const { error } = await supabase.from("live_chats").delete().eq("id", msgId);
+      if (error) throw error;
+      addToast("Pesan berhasil dihapus", "success");
+      setMessages(prev => prev.filter(m => m.id !== msgId));
+    } catch (err) {
+      addToast("Gagal menghapus pesan: " + err.message, "error");
+    }
+  };
 
   const messagesEndRef = useRef(null);
   const { addToast } = useToast();
@@ -276,43 +287,76 @@ export default function LiveChatWidget() {
                 return (
                   <div
                     key={msg.id}
-                    className={`flex items-start gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} group relative z-10`}
+                    className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"} group relative z-10`}
                   >
-                    <img
-                      src={
-                        msg.profiles?.avatar_url ||
-                        "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg"
-                      }
-                      alt="Avatar"
-                      className={`w-8 h-8 rounded-full object-cover mt-1 flex-shrink-0 bg-[#201F31] ${frameClass}`}
-                    />
+                    {/* Avatar with Crown on top & VIP badge below */}
+                    <div className="relative shrink-0 self-start mt-1">
+                      {msg.profiles?.is_vip && (
+                        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs z-10 drop-shadow">
+                          👑
+                        </span>
+                      )}
+                      <img
+                        src={
+                          msg.profiles?.avatar_url ||
+                          "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg"
+                        }
+                        alt="Avatar"
+                        className={`w-8 h-8 rounded-full object-cover bg-[#201F31] ${frameClass}`}
+                      />
+                      {msg.profiles?.is_vip && (
+                        <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1 py-0.2 text-[7px] font-black rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white border border-purple-400 shadow-md">
+                          VIP
+                        </span>
+                      )}
+                    </div>
 
-                    <div className="flex flex-col max-w-[75%] min-w-[50%]">
-                      {/* Info Pengirim (Nama, Waktu, Level, Title) */}
+                    <div className="flex flex-col max-w-[78%] min-w-[50%]">
+                      {/* Info Pengirim (Nama & 3-Dots Menu) */}
                       <div className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-xs font-bold" style={{ color: meta?.nameColor || "#cccccc" }}>
+                        <div className="flex items-center justify-between w-full gap-2">
+                          <span className="text-xs font-bold truncate" style={{ color: meta?.nameColor || "#cccccc" }}>
                             {isAnon ? "Anonim" : msg.profiles?.display_name || msg.profiles?.username || "Anime Fan"}
                           </span>
-                          {msg.profiles?.is_vip && (
-                            <span className="px-1.5 py-0.2 text-[8px] font-black rounded bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm border border-yellow-400">
-                              VIP 👑
-                            </span>
+
+                          {/* 3-Dots Action Button for owner */}
+                          {isMe && (
+                            <div className="relative">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === msg.id ? null : msg.id); }}
+                                className="text-gray-400 hover:text-white p-0.5 text-[10px]"
+                                title="Pilihan"
+                              >
+                                <FontAwesomeIcon icon={faEllipsisV} />
+                              </button>
+
+                              {activeMenuId === msg.id && (
+                                <div className="absolute right-0 top-5 w-28 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs">
+                                  <button 
+                                    onClick={() => { handleDeleteLiveChat(msg.id); setActiveMenuId(null); }}
+                                    className="w-full text-left px-3 py-1.5 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-1.5 text-[11px]"
+                                  >
+                                    🗑️ Hapus
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           )}
-                          <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                            {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: localeId })}
+                        </div>
+
+                        {/* Second Row: Level/Title on left, WhatsApp date on right */}
+                        <div className="flex items-center justify-between w-full mt-0.5 text-[10px] text-gray-400 gap-2">
+                          {!isAnon && meta ? (
+                            <span className="text-[9px] font-bold text-[#ffbade] truncate">
+                              Lv.{meta.level} • {meta.title}
+                            </span>
+                          ) : (
+                            <span></span>
+                          )}
+                          <span className="text-[9px] text-gray-500 whitespace-nowrap">
+                            {formatWhatsAppDate(msg.created_at)}
                           </span>
                         </div>
-                        {!isAnon && meta && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#111111] border border-gray-800 text-[#ffbade]">
-                              Lv.{meta.level}
-                            </span>
-                            <span className="text-[10px] font-semibold" style={{ color: meta.titleColor }}>
-                              {meta.title}
-                            </span>
-                          </div>
-                        )}
                       </div>
 
                       {/* Bubble Pesan */}
