@@ -31,7 +31,8 @@ import website_name from "@/src/config/website";
 import getChapterStyles from "./getChapterStyle";
 import artplayerPluginHlsControl from "artplayer-plugin-hls-control";
 import artplayerPluginUploadSubtitle from "./artplayerPluginUploadSubtitle";
-import { supabase } from "@/src/lib/supabaseClient";
+import { supabase } from "../../lib/supabaseClient";
+import { addXpAndCheckLevelUp } from "../../utils/xp.utils";
 
 Artplayer.LOG_VERSION = false;
 Artplayer.CONTEXTMENU = false;
@@ -124,6 +125,9 @@ export default function Player({
               details: { title: animeInfo?.title, poster: animeInfo?.poster }
             });
         }
+
+        // Tambah XP +10 untuk episode yang ditonton
+        addXpAndCheckLevelUp(session.user.id, "watch_episode", 10, episodeId);
       } catch (err) {
         console.error("Failed to save watch history to DB", err);
       }

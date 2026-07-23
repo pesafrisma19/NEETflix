@@ -20,6 +20,7 @@ import MobileSearch from "../searchbar/MobileSearch";
 import { supabase } from "@/src/lib/supabaseClient";
 import AuthModal from "../auth/AuthModal";
 import { useToast } from "@/src/context/ToastContext";
+import { getAvatarFrameClass } from "@/src/utils/xp.utils";
 
 function Navbar() {
   const location = useLocation();
@@ -45,11 +46,18 @@ function Navbar() {
     const fetchProfile = async (userId) => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("avatar_url, display_name")
+        .select("avatar_url, display_name, level, is_vip")
         .eq("id", userId)
         .single();
+
+      const { data: customs } = await supabase
+        .from("user_customizations")
+        .select("equipped_frame, equipped_title")
+        .eq("user_id", userId)
+        .maybeSingle();
+
       if (data && !error) {
-        setProfileData(data);
+        setProfileData({ ...data, customs });
       }
     };
 
@@ -251,7 +259,7 @@ function Navbar() {
                 <img 
                   src={profileData?.avatar_url || user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${user.user_metadata?.full_name || 'User'}&background=ffbade&color=000`} 
                   alt="Avatar" 
-                  className="w-6 h-6 rounded-full border border-[#ffbade] object-cover" 
+                  className={`w-7 h-7 rounded-full object-cover bg-[#201F31] ${getAvatarFrameClass(profileData?.level || 1, profileData?.is_vip, profileData?.customs)}`} 
                 />
                 <p className="text-[15px] mb-[1px] text-white">Profil</p>
               </div>

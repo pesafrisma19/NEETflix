@@ -11,6 +11,7 @@ import { FaWhatsapp, FaLink } from 'react-icons/fa';
 import website_name from "@/src/config/website";
 import { supabase } from "@/src/lib/supabaseClient";
 import CommentAnime from "@/src/components/commentanime/CommentAnime";
+import { addXpAndCheckLevelUp } from "../../utils/xp.utils";
 
 const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
 
@@ -114,6 +115,9 @@ function WatchDonghua() {
                           details: { title: donghuaTitle, poster: posterUrl, mediaType: 'donghua' }
                         });
                     }
+
+                    // Tambah XP +10 untuk episode donghua yang ditonton
+                    addXpAndCheckLevelUp(session.user.id, "watch_episode", 10, targetEpId);
                   }
                 } catch (err) {}
               }

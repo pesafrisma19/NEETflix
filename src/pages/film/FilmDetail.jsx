@@ -9,6 +9,7 @@ import { FaWhatsapp, FaLink } from 'react-icons/fa';
 import website_name from "@/src/config/website";
 import { supabase } from "@/src/lib/supabaseClient";
 import { useToast } from "@/src/context/ToastContext";
+import { addXpAndCheckLevelUp } from "../../utils/xp.utils";
 
 const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
 
@@ -91,6 +92,9 @@ function FilmDetail() {
         if (error) throw error;
         setIsInWatchlist(true);
         addToast("Berhasil ditambahkan ke Watchlist!", "success");
+
+        // Tambah XP +3 untuk Bookmark
+        addXpAndCheckLevelUp(user.id, "bookmark", 3, id, addToast);
       }
     } catch (err) {
       addToast("Gagal mengupdate Watchlist!", "error");

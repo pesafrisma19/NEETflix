@@ -6,20 +6,11 @@ import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import BouncingLoader from "@/src/components/ui/bouncingloader/Bouncingloader";
 import AuthModal from "@/src/components/auth/AuthModal";
-
-const getRankTitle = (level) => {
-  if (level >= 999) return "NEETflix Lovers 👑";
-  if (level >= 800) return "Kami-sama";
-  if (level >= 500) return "Isekai Protagonist";
-  if (level >= 200) return "Hikikomori";
-  if (level >= 100) return "Weaboo";
-  if (level >= 50) return "Otaku";
-  if (level >= 30) return "Anime Fan";
-  if (level >= 10) return "Novice Watcher";
-  return "Villager";
-};
+import { useToast } from "@/src/context/ToastContext";
+import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp } from "@/src/utils/xp.utils";
 
 export default function CommentAnime({ targetId, episodeTitle }) {
+  const { addToast } = useToast();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
@@ -77,7 +68,7 @@ export default function CommentAnime({ targetId, episodeTitle }) {
       .from("comments")
       .select(`
         *,
-        profiles:user_id (id, username, display_name, avatar_url, level, role),
+        profiles:user_id (id, username, display_name, avatar_url, level, role, is_vip),
         comment_likes (user_id)
       `)
       .eq("target_id", targetId);
@@ -135,7 +126,7 @@ export default function CommentAnime({ targetId, episodeTitle }) {
       ])
       .select(`
         *,
-        profiles:user_id (id, username, display_name, avatar_url, level, role),
+        profiles:user_id (id, username, display_name, avatar_url, level, role, is_vip),
         comment_likes (user_id)
       `)
       .single();
@@ -159,6 +150,8 @@ export default function CommentAnime({ targetId, episodeTitle }) {
           setComments([...comments, data]);
         }
       }
+
+      addXpAndCheckLevelUp(currentUser.id, "comment", 25, data.id, addToast);
     } else {
       console.error(error);
       alert("Gagal mengirim komentar.");
@@ -184,6 +177,7 @@ export default function CommentAnime({ targetId, episodeTitle }) {
         .insert([{ user_id: currentUser.id, comment_id: commentId }]);
 
       updateCommentLikeState(commentId, true);
+      addXpAndCheckLevelUp(currentUser.id, "like", 5, commentId, addToast);
     }
   };
 
@@ -212,16 +206,22 @@ export default function CommentAnime({ targetId, episodeTitle }) {
     const authorLevel = comment.profiles?.level || 1;
     const rankTitle = getRankTitle(authorLevel);
     const avatarUrl = comment.profiles?.avatar_url || "https://i.pinimg.com/736x/c0/74/9b/c0749b7cc401421662ae901ec8f9f660.jpg";
+    const frameClass = getAvatarFrameClass(authorLevel, comment.profiles?.is_vip);
 
     return (
       <div className={`flex gap-x-4 ${isReply ? 'ml-12 mt-4' : 'mt-6'}`}>
-        <Link to={`/profile/${comment.profiles?.username}`}>
-          <img src={avatarUrl} alt="avatar" className="w-10 h-10 rounded-full object-cover shrink-0" />
+        <Link to={`/user/${comment.profiles?.username}`}>
+          <img src={avatarUrl} alt="avatar" className={`w-10 h-10 rounded-full object-cover shrink-0 ${frameClass}`} />
         </Link>
         <div className="flex flex-col w-full">
           <div className="flex items-center gap-x-2 flex-wrap">
-            <Link to={`/profile/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors">
+            <Link to={`/user/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors flex items-center gap-1">
               {authorName}
+              {comment.profiles?.is_vip && (
+                <span className="px-1.5 py-0.5 text-[9px] font-black rounded-md bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm border border-yellow-400">
+                  VIP 👑
+                </span>
+              )}
             </Link>
             <span className="text-[12px] text-gray-400">
               Level {authorLevel} - {rankTitle}
@@ -289,13 +289,14 @@ export default function CommentAnime({ targetId, episodeTitle }) {
   const renderCommentInput = (parentId = null, onCancel = null) => {
     const avatarUrl = currentProfile?.avatar_url || "https://i.pinimg.com/736x/c0/74/9b/c0749b7cc401421662ae901ec8f9f660.jpg";
     const authorName = currentProfile?.display_name || currentProfile?.username || currentUser?.email?.split('@')[0] || "User";
+    const inputFrameClass = getAvatarFrameClass(currentProfile?.level || 1, currentProfile?.is_vip);
 
     return (
       <form onSubmit={(e) => handleSubmit(e, parentId)} className="bg-[#191826] p-4 rounded-xl border border-[#2a293d]">
         {currentUser ? (
           <>
             <div className="flex items-center gap-x-3 mb-3">
-              <img src={avatarUrl} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+              <img src={avatarUrl} alt="avatar" className={`w-8 h-8 rounded-full object-cover ${inputFrameClass}`} />
               <span className="text-[13px] text-gray-300">
                 Berkomentar sebagai <span className="font-bold text-white">{authorName}</span>
               </span>

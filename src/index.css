@@ -124,3 +124,87 @@ body {
   background: rgba(255, 255, 255, 0.3);
   display: inline-block;
 }
+
+/* Avatar Frames Styles & Animations */
+.avatar-frame-standard {
+  border: 2.5px solid #ffbade;
+  box-shadow: 0 0 8px rgba(255, 186, 222, 0.4);
+}
+
+.avatar-frame-bronze {
+  border: 2.5px solid #cd7f32;
+  box-shadow: 0 0 8px rgba(205, 127, 50, 0.4);
+}
+
+.avatar-frame-silver {
+  border: 2.5px solid #c0c0c0;
+  box-shadow: 0 0 12px rgba(192, 192, 192, 0.6);
+}
+
+.avatar-frame-gold {
+  border: 3px solid #ffd700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+  animation: goldPulse 3s infinite alternate;
+}
+
+.avatar-frame-mythic {
+  border: 3px solid #a855f7;
+  box-shadow: 0 0 18px rgba(168, 85, 247, 0.8), inset 0 0 8px rgba(168, 85, 247, 0.5);
+  animation: mythicGlow 2.5s infinite alternate;
+}
+
+.avatar-frame-vip {
+  border: 3px solid transparent;
+  background-image: linear-gradient(#1a1a24, #1a1a24), linear-gradient(90deg, #ff007f, #7f00ff, #00f0ff, #ff007f);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  animation: vipRainbow 4s linear infinite;
+  box-shadow: 0 0 12px rgba(255, 0, 127, 0.5);
+}
+
+.avatar-frame-matrix {
+  border: 2.5px solid #00ff88;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.6);
+}
+
+.avatar-frame-pulse {
+  border: 2.5px solid #a855f7;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.6);
+}
+
+.avatar-frame-fire {
+  border: 2.5px solid #ff4500;
+  box-shadow: 0 0 10px rgba(255, 69, 0, 0.7);
+}
+
+.avatar-frame-dragon {
+  border: 2.5px solid #dc2626;
+  box-shadow: 0 0 12px rgba(220, 38, 38, 0.7);
+}
+
+.avatar-frame-emerald {
+  border: 2.5px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.6);
+}
+
+.avatar-frame-mystic {
+  border: 2.5px solid #8b5cf6;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.7);
+}
+
+@keyframes goldPulse {
+  0% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.9); }
+}
+
+@keyframes mythicGlow {
+  0% { box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); border-color: #a855f7; }
+  50% { box-shadow: 0 0 22px rgba(236, 72, 153, 0.9); border-color: #ec4899; }
+  100% { box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); border-color: #a855f7; }
+}
+
+@keyframes vipRainbow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+

@@ -2,23 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle, faVideo } from "@fortawesome/free-solid-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import EmojiPicker from "emoji-picker-react";
 import { formatDistanceToNow } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-
-const getRankTitle = (level) => {
-  if (level >= 999) return "NEETflix Lovers 👑";
-  if (level >= 800) return "Kami-sama";
-  if (level >= 500) return "Isekai Protagonist";
-  if (level >= 200) return "Hikikomori";
-  if (level >= 100) return "Weaboo";
-  if (level >= 50) return "Otaku";
-  if (level >= 30) return "Anime Fan";
-  if (level >= 10) return "Novice Watcher";
-  return "Villager";
-};
+import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp } from "../../utils/xp.utils";
 
 export default function LiveChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,9 +16,10 @@ export default function LiveChatWidget() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [onlineUsers, setOnlineUsers] = useState(1); // Minimal 1 (Diri sendiri)
+  const [onlineUsers, setOnlineUsers] = useState(1);
   const [userMeta, setUserMeta] = useState({});
   const [replyTo, setReplyTo] = useState(null);
+  const [showVideoBg, setShowVideoBg] = useState(true);
 
   const messagesEndRef = useRef(null);
   const { addToast } = useToast();
@@ -107,7 +97,7 @@ export default function LiveChatWidget() {
           created_at,
           user_id,
           reply_to_id,
-          profiles(display_name, username, avatar_url, level, role)
+          profiles(display_name, username, avatar_url, level, role, is_vip)
         `)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -173,7 +163,6 @@ export default function LiveChatWidget() {
 
     setLoading(true);
 
-    // Siapkan payload, abaikan reply_to_id jika tidak ada agar tidak error
     const payload = {
       user_id: user ? user.id : null,
       message: newMessage.trim(),
@@ -188,6 +177,11 @@ export default function LiveChatWidget() {
       setNewMessage("");
       setReplyTo(null);
       setShowEmojiPicker(false);
+
+      // Tambah XP +5 untuk Live Chat jika user terautentikasi (Max 10 chat/hari)
+      if (user) {
+        addXpAndCheckLevelUp(user.id, "live_chat", 5, null, addToast);
+      }
     }
     setLoading(false);
   };
@@ -196,7 +190,6 @@ export default function LiveChatWidget() {
     setNewMessage((prev) => prev + emojiObject.emoji);
   };
 
-  // Fitur 7: @Mention Highlighter
   const renderMessage = (text) => {
     if (!text) return "";
     const mentionRegex = /(@\w+)/g;
@@ -224,16 +217,23 @@ export default function LiveChatWidget() {
       )}
 
       {isOpen && (
-        <div className="w-80 sm:w-96 h-[500px] bg-[#161523] border border-[#ffbade]/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in">
+        <div className="w-80 sm:w-96 h-[500px] bg-[#161523] border border-[#ffbade]/30 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fade-in relative">
           {/* Header */}
-          <div className="bg-[#201F31] p-4 flex justify-between items-center border-b border-[#ffbade]/20">
+          <div className="bg-[#201F31] p-4 flex justify-between items-center border-b border-[#ffbade]/20 z-10">
             <h3 className="text-white font-bold text-lg flex items-center gap-2">
               <FontAwesomeIcon icon={faComments} className="text-[#ffbade]" />
               Live Chat
             </h3>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowVideoBg(!showVideoBg)}
+                title={showVideoBg ? "Matikan Background Animasi" : "Aktifkan Background Animasi"}
+                className={`text-xs px-2 py-1 rounded-md transition-colors border flex items-center gap-1 ${showVideoBg ? "border-[#ffbade] text-[#ffbade] bg-[#ffbade]/10" : "border-gray-600 text-gray-400 hover:text-white"}`}
+              >
+                <FontAwesomeIcon icon={faVideo} /> {showVideoBg ? "Video On" : "Video Off"}
+              </button>
               <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-1 rounded-full flex items-center gap-1 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
-                <FontAwesomeIcon icon={faCircle} className="text-[8px] animate-pulse" /> {onlineUsers} Online
+                <FontAwesomeIcon icon={faCircle} className="text-[8px] animate-pulse" /> {onlineUsers}
               </span>
               <button
                 onClick={() => setIsOpen(false)}
@@ -244,10 +244,25 @@ export default function LiveChatWidget() {
             </div>
           </div>
 
-          {/* Area Pesan */}
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar bg-[#161523]" onClick={() => setShowEmojiPicker(false)}>
+          {/* Area Pesan dengan Background Video / Animasi */}
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 custom-scrollbar bg-[#161523] relative z-0" onClick={() => setShowEmojiPicker(false)}>
+            {showVideoBg && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 opacity-25">
+                <div className="absolute inset-0 bg-gradient-to-b from-[#161523]/80 via-transparent to-[#161523]/90 z-10"></div>
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-cover filter blur-[1px]"
+                >
+                  <source src="https://assets.mixkit.co/videos/preview/mixkit-stars-in-the-night-sky-4006-large.mp4" type="video/mp4" />
+                </video>
+              </div>
+            )}
+
             {messages.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-gray-500 text-sm text-center">
+              <div className="flex-1 flex items-center justify-center text-gray-500 text-sm text-center relative z-10">
                 Belum ada pesan. Jadilah yang pertama menyapa!
               </div>
             ) : (
@@ -255,14 +270,13 @@ export default function LiveChatWidget() {
                 const isMe = user && msg.user_id === user.id;
                 const meta = userMeta[msg.user_id];
                 const isAnon = !msg.user_id;
-
-                // Cari pesan asli jika direply
+                const frameClass = getAvatarFrameClass(meta?.level || 1, msg.profiles?.is_vip);
                 const repliedMsg = msg.reply_to_id ? messages.find(m => m.id === msg.reply_to_id) : null;
 
                 return (
                   <div
                     key={msg.id}
-                    className={`flex items-start gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} group`}
+                    className={`flex items-start gap-2 ${isMe ? "flex-row-reverse" : "flex-row"} group relative z-10`}
                   >
                     <img
                       src={
@@ -270,16 +284,21 @@ export default function LiveChatWidget() {
                         "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg"
                       }
                       alt="Avatar"
-                      className="w-8 h-8 rounded-full border border-gray-700 object-cover mt-1 flex-shrink-0 bg-[#201F31]"
+                      className={`w-8 h-8 rounded-full object-cover mt-1 flex-shrink-0 bg-[#201F31] ${frameClass}`}
                     />
 
                     <div className="flex flex-col max-w-[75%] min-w-[50%]">
                       {/* Info Pengirim (Nama, Waktu, Level, Title) */}
                       <div className={`flex flex-col mb-1 ${isMe ? "items-end" : "items-start"}`}>
-                        <div className="flex items-end gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs font-bold" style={{ color: meta?.nameColor || "#cccccc" }}>
                             {isAnon ? "Anonim" : msg.profiles?.display_name || msg.profiles?.username || "Anime Fan"}
                           </span>
+                          {msg.profiles?.is_vip && (
+                            <span className="px-1.5 py-0.2 text-[8px] font-black rounded bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm border border-yellow-400">
+                              VIP 👑
+                            </span>
+                          )}
                           <span className="text-[10px] text-gray-500 whitespace-nowrap">
                             {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true, locale: localeId })}
                           </span>

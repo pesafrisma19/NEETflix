@@ -5,19 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStar, faHistory, faLock, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 
-const getRankTitle = (level) => {
-  if (level >= 999) return "NEETflix Lovers 👑";
-  if (level >= 800) return "Kami-sama";
-  if (level >= 500) return "Isekai Protagonist";
-  if (level >= 200) return "Hikikomori";
-  if (level >= 100) return "Weaboo";
-  if (level >= 50) return "Otaku";
-  if (level >= 30) return "Anime Fan";
-  if (level >= 10) return "Novice Watcher";
-  return "Villager";
-};
-
-const xpToNextLevel = (level) => level * 100;
+import { getRankTitle, xpToNextLevel, getAvatarFrameClass } from "../../utils/xp.utils";
 
 export default function PublicProfile() {
   const { username } = useParams();
@@ -87,6 +75,8 @@ export default function PublicProfile() {
   const avatarUrl = profile?.avatar_url || "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg";
   const bannerUrl = profile?.banner_url || "https://images.unsplash.com/photo-1578632767115-351597cf2477?q=80&w=2560&auto=format&fit=crop";
 
+  const avatarFrameClass = getAvatarFrameClass(currentLevel, profile?.is_vip);
+
   return (
     <div className="min-h-screen pt-16 bg-[#161523] text-white">
       {/* Banner */}
@@ -106,7 +96,7 @@ export default function PublicProfile() {
             <img 
               src={avatarUrl} 
               alt="Avatar" 
-              className={`relative w-36 h-36 md:w-44 md:h-44 rounded-full border-4 border-[#1A1927] object-cover bg-[#201F31] shadow-2xl z-10 ${profile?.is_vip ? 'ring-2 ring-[#ffbade]/50' : ''}`}
+              className={`relative w-36 h-36 md:w-44 md:h-44 rounded-full object-cover bg-[#201F31] shadow-2xl z-10 ${avatarFrameClass}`}
             />
             {profile?.is_vip && (
               <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black shadow-lg z-20 tracking-wider"

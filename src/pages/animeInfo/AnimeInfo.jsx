@@ -22,6 +22,7 @@ import Trailer from "@/src/components/trailer/Trailer";
 import Soundtrack from "@/src/components/soundtrack/Soundtrack";
 import { supabase } from "@/src/lib/supabaseClient";
 import { useToast } from "@/src/context/ToastContext";
+import { addXpAndCheckLevelUp } from "@/src/utils/xp.utils";
 
 function InfoItem({ label, value, isProducer = true }) {
   return (
@@ -172,6 +173,9 @@ function AnimeInfo({ random = false }) {
         if (error) throw error;
         setIsInWatchlist(true);
         addToast("Berhasil ditambahkan ke Watchlist!", "success");
+
+        // Tambah XP +3 untuk Bookmark
+        addXpAndCheckLevelUp(user.id, "bookmark", 3, id, addToast);
       }
     } catch (err) {
       addToast("Gagal mengupdate Watchlist!", "error");
