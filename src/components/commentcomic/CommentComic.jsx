@@ -259,47 +259,54 @@ export default function CommentComic({ targetId, episodeTitle }) {
         </Link>
 
         <div className="flex flex-col w-full text-left">
-          {/* Top Row: Username + 3-Dots Menu */}
-          <div className="flex items-center justify-between gap-2">
-            <Link to={`/user/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors text-sm truncate">
-              {authorName}
-            </Link>
+          {/* Header Row: Left Column (2 Baris: Nama & Level), Right Column (1 Baris: Waktu + Titik 3) */}
+          <div className="flex items-start justify-between w-full mb-1">
+            {/* Sisi Kiri (Dekat Foto Profil) - 2 Baris */}
+            <div className="flex flex-col text-left overflow-hidden">
+              <Link to={`/user/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors text-sm truncate">
+                {authorName}
+              </Link>
+              <span className="text-[11px] text-gray-400">
+                Lvl {authorLevel} • {rankTitle}
+              </span>
+            </div>
 
-            {/* 3-Dots Action Button & Dropdown Menu */}
-            {isOwner && (
-              <div className="relative">
-                <button 
-                  onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === comment.id ? null : comment.id); }}
-                  className="text-gray-400 hover:text-white p-1 text-xs"
-                  title="Pilihan"
-                >
-                  <FontAwesomeIcon icon={faEllipsisV} />
-                </button>
+            {/* Sisi Kanan (Pojok Kanan) - 1 Baris Sejajar: Waktu + Titik 3 */}
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[11px] text-gray-500 whitespace-nowrap">
+                {formatWhatsAppDate(comment.created_at)}
+              </span>
 
-                {activeMenuId === comment.id && (
-                  <div className="absolute right-0 top-6 w-32 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs">
-                    <button 
-                      onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); setActiveMenuId(null); }}
-                      className="w-full text-left px-3 py-2 text-gray-300 hover:bg-[#ffbade]/20 hover:text-[#ffbade] font-semibold flex items-center gap-2"
-                    >
-                      ✏️ Edit
-                    </button>
-                    <button 
-                      onClick={() => { handleDeleteComment(comment.id); setActiveMenuId(null); }}
-                      className="w-full text-left px-3 py-2 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-2"
-                    >
-                      🗑️ Hapus
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+              {/* 3-Dots Action Button & Dropdown Menu */}
+              {isOwner && (
+                <div className="relative">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === comment.id ? null : comment.id); }}
+                    className="text-gray-400 hover:text-white p-1 text-xs"
+                    title="Pilihan"
+                  >
+                    <FontAwesomeIcon icon={faEllipsisV} />
+                  </button>
 
-          {/* Second Row: Level & Rank Title on left | WhatsApp date on right */}
-          <div className="flex items-center justify-between text-[11px] text-gray-400 mt-0.5">
-            <span>Lvl {authorLevel} • {rankTitle}</span>
-            <span className="text-gray-500">{formatWhatsAppDate(comment.created_at)}</span>
+                  {activeMenuId === comment.id && (
+                    <div className="absolute right-0 top-6 w-32 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs">
+                      <button 
+                        onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); setActiveMenuId(null); }}
+                        className="w-full text-left px-3 py-2 text-gray-300 hover:bg-[#ffbade]/20 hover:text-[#ffbade] font-semibold flex items-center gap-2"
+                      >
+                        ✏️ Edit
+                      </button>
+                      <button 
+                        onClick={() => { handleDeleteComment(comment.id); setActiveMenuId(null); }}
+                        className="w-full text-left px-3 py-2 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-2"
+                      >
+                        🗑️ Hapus
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Comment Content / Edit Mode */}

@@ -312,11 +312,24 @@ export default function LiveChatWidget() {
                     </div>
 
                     <div className="flex flex-col max-w-[78%] min-w-[50%]">
-                      {/* Info Pengirim (Nama & 3-Dots Menu) */}
-                      <div className={`flex flex-col mb-1 ${isMe ? "items-end text-right" : "items-start text-left"}`}>
-                        <div className={`flex items-center gap-2 w-full ${isMe ? "flex-row-reverse justify-start" : "flex-row justify-between"}`}>
+                      {/* Info Pengirim: Sisi Kategori (2 Baris Nama & Title dekat Avatar, 1 Baris Waktu & Titik 3 di Pojok Lawan) */}
+                      <div className={`flex items-start justify-between w-full mb-1 gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                        {/* Sisi Dekat Foto Profil - 2 Baris: Nama & Title */}
+                        <div className={`flex flex-col overflow-hidden ${isMe ? "items-end text-right" : "items-start text-left"}`}>
                           <span className="text-xs font-bold truncate" style={{ color: meta?.nameColor || "#cccccc" }}>
                             {isAnon ? "Anonim" : msg.profiles?.display_name || msg.profiles?.username || "Anime Fan"}
+                          </span>
+                          {!isAnon && meta && (
+                            <span className="text-[9px] font-bold text-[#ffbade] truncate">
+                              Lv.{meta.level} • {meta.title}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Sisi Jauh dari Foto Profil - 1 Baris: Waktu + Titik 3 */}
+                        <div className={`flex items-center gap-1.5 shrink-0 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+                          <span className="text-[9px] text-gray-500 whitespace-nowrap">
+                            {formatWhatsAppDate(msg.created_at)}
                           </span>
 
                           {/* 3-Dots Action Button for owner */}
@@ -342,20 +355,6 @@ export default function LiveChatWidget() {
                               )}
                             </div>
                           )}
-                        </div>
-
-                        {/* Second Row: Level/Title on left, WhatsApp date on right */}
-                        <div className={`flex items-center gap-2 w-full mt-0.5 text-[10px] text-gray-400 ${isMe ? "flex-row-reverse justify-start" : "flex-row justify-between"}`}>
-                          {!isAnon && meta ? (
-                            <span className="text-[9px] font-bold text-[#ffbade] truncate">
-                              Lv.{meta.level} • {meta.title}
-                            </span>
-                          ) : (
-                            <span></span>
-                          )}
-                          <span className="text-[9px] text-gray-500 whitespace-nowrap">
-                            {formatWhatsAppDate(msg.created_at)}
-                          </span>
                         </div>
                       </div>
 
