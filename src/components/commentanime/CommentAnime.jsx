@@ -27,6 +27,17 @@ export default function CommentAnime({ targetId, episodeTitle }) {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editContent, setEditContent] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".action-menu-container")) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetchSession();
@@ -206,11 +217,13 @@ export default function CommentAnime({ targetId, episodeTitle }) {
   };
 
   const handleDeleteComment = async (commentId) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus komentar ini?")) return;
     try {
+      await supabase.from("comment_likes").delete().eq("comment_id", commentId);
+      await supabase.from("comments").delete().eq("parent_id", commentId);
       const { error } = await supabase.from("comments").delete().eq("id", commentId);
       if (error) throw error;
       addToast("Komentar berhasil dihapus", "success");
+      setDeleteConfirmId(null);
       fetchComments();
     } catch (err) {
       addToast("Gagal menghapus komentar: " + err.message, "error");
@@ -279,7 +292,7 @@ export default function CommentAnime({ targetId, episodeTitle }) {
 
               {/* 3-Dots Action Button & Dropdown Menu */}
               {isOwner && (
-                <div className="relative">
+                <div className="relative action-menu-container">
                   <button 
                     onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === comment.id ? null : comment.id); }}
                     className="text-gray-400 hover:text-white p-1 text-xs"
@@ -297,7 +310,7 @@ export default function CommentAnime({ targetId, episodeTitle }) {
                         ✏️ Edit
                       </button>
                       <button 
-                        onClick={() => { handleDeleteComment(comment.id); setActiveMenuId(null); }}
+                        onClick={() => { setDeleteConfirmId(comment.id); setActiveMenuId(null); }}
                         className="w-full text-left px-3 py-2 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-2"
                       >
                         🗑️ Hapus
@@ -503,6 +516,29 @@ export default function CommentAnime({ targetId, episodeTitle }) {
           )}
         </div>
       </div>
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4 animate-fade-in">
+          <div className="bg-[#1C1B2B] border border-gray-700 p-6 rounded-2xl max-w-xs w-full text-center space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white">Hapus Komentar?</h3>
+            <p className="text-xs text-gray-300">Komentar yang dihapus tidak dapat dikembalikan lagi.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => handleDeleteComment(deleteConfirmId)}
+                className="px-4 py-2 text-xs bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold"
+              >
+                Ya, Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

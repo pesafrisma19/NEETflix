@@ -19,13 +19,24 @@ export default function LiveChatWidget() {
   const [replyTo, setReplyTo] = useState(null);
   const [showVideoBg, setShowVideoBg] = useState(true);
   const [activeMenuId, setActiveMenuId] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".action-menu-container")) {
+        setActiveMenuId(null);
+      }
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   const handleDeleteLiveChat = async (msgId) => {
-    if (!window.confirm("Apakah Anda yakin ingin menghapus pesan ini?")) return;
     try {
       const { error } = await supabase.from("live_chats").delete().eq("id", msgId);
       if (error) throw error;
       addToast("Pesan berhasil dihapus", "success");
+      setDeleteConfirmId(null);
       setMessages(prev => prev.filter(m => m.id !== msgId));
     } catch (err) {
       addToast("Gagal menghapus pesan: " + err.message, "error");
@@ -334,7 +345,7 @@ export default function LiveChatWidget() {
 
                           {/* 3-Dots Action Button for owner */}
                           {isMe && (
-                            <div className="relative">
+                            <div className="relative action-menu-container">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); setActiveMenuId(activeMenuId === msg.id ? null : msg.id); }}
                                 className="text-gray-400 hover:text-white p-0.5 text-[10px]"
@@ -346,7 +357,7 @@ export default function LiveChatWidget() {
                               {activeMenuId === msg.id && (
                                 <div className="absolute right-0 top-5 w-28 bg-[#1C1B2B] border border-gray-700 rounded-xl shadow-xl py-1 z-30 text-xs text-left">
                                   <button 
-                                    onClick={() => { handleDeleteLiveChat(msg.id); setActiveMenuId(null); }}
+                                    onClick={() => { setDeleteConfirmId(msg.id); setActiveMenuId(null); }}
                                     className="w-full text-left px-3 py-1.5 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-1.5 text-[11px]"
                                   >
                                     🗑️ Hapus
@@ -438,6 +449,30 @@ export default function LiveChatWidget() {
                 <FontAwesomeIcon icon={faPaperPlane} />
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] p-4 animate-fade-in">
+          <div className="bg-[#1C1B2B] border border-gray-700 p-6 rounded-2xl max-w-xs w-full text-center space-y-4 shadow-2xl">
+            <h3 className="text-base font-bold text-white">Hapus Pesan Chat?</h3>
+            <p className="text-xs text-gray-300">Pesan yang dihapus tidak dapat dikembalikan lagi.</p>
+            <div className="flex gap-3 justify-center pt-2">
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                className="px-4 py-2 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-semibold"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={() => handleDeleteLiveChat(deleteConfirmId)}
+                className="px-4 py-2 text-xs bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold"
+              >
+                Ya, Hapus
+              </button>
+            </div>
           </div>
         </div>
       )}
