@@ -76,6 +76,8 @@ function Suggestion({ keyword, className, type = "anime" }) {
     if (type === "film") return `/film/${item.id}`;
     if (type === "comic") return `/comic/${item.id}`;
     if (type === "donghua") return `/donghua/${item.id}`;
+    // Konten AL-only (tidak ada di AniList) → langsung ke watch page
+    if (String(item.id).startsWith("AL-")) return `/watch/${formatSlug(item.title, item.id)}`;
     return `/${formatSlug(item.title, item.id)}`;
   };
 

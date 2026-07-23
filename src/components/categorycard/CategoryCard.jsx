@@ -200,7 +200,7 @@ const CategoryCard = React.memo(
                       )}
                   </div>
                   <Link
-                    to={`/${formatSlug(item.title, item.id)}`}
+                    to={String(item.id).startsWith("AL-") ? `/watch/${formatSlug(item.title, item.id)}` : `/${formatSlug(item.title, item.id)}`}
                     className="text-white font-semibold mt-1 item-title hover:text-[#FFBADE] hover:cursor-pointer line-clamp-1"
                   >
                     {language === "EN" ? item.title : item.japanese_title}
@@ -308,7 +308,7 @@ const CategoryCard = React.memo(
                     )}
                 </div>
                 <Link
-                  to={`/${formatSlug(item.title, item.id)}`}
+                  to={String(item.id).startsWith("AL-") ? `/watch/${formatSlug(item.title, item.id)}` : `/${formatSlug(item.title, item.id)}`}
                   className="text-white font-semibold mt-1 item-title hover:text-[#FFBADE] hover:cursor-pointer line-clamp-1"
                 >
                   {language === "EN" ? item.title : item.japanese_title}

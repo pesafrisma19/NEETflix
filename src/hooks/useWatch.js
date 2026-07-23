@@ -101,6 +101,64 @@ export const useWatch = (animeId, initialEpisodeId) => {
     const fetchInitialData = async () => {
       try {
         setAnimeInfoLoading(true);
+
+        // ── MODE AL-ONLY: Konten yang tidak ada di AniList, langsung dari AnimeLovers ──
+        if (String(animeId).startsWith("AL-")) {
+          const slug = animeId.replace("AL-", "");
+          const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
+          const res = await fetch(`${NEETFLIXAPI}/api/animelovers/info?id=${encodeURIComponent(slug)}`);
+          const alData = await res.json();
+          const alInfo = alData?.results || alData;
+
+          // Format data AL agar kompatibel dengan shape animeInfo yang dipakai useWatch
+          const fakeAnimeInfo = {
+            id: animeId,
+            title: alInfo.title,
+            japanese_title: alInfo.title,
+            poster: (alInfo.image || "").replace(/https:\/\/i\d+\.wp\.com\//, "https://"),
+            description: alInfo.synopsis || "",
+            charactersVoiceActors: [],   // Watch.jsx mengakses ini
+            recommended_data: [],         // Watch.jsx mengakses ini
+            related_data: [],             // Watch.jsx mengakses ini
+            animeInfo: {
+              tvInfo: {
+                showType: alInfo.type || "TV",
+                eps: alInfo.episodes?.length || "?",
+                duration: "?",
+                rating: "PG-13",
+              },
+              Status: alInfo.status || "",
+              Aired: alInfo.releaseDate || "",
+              Studios: alInfo.studio ? [alInfo.studio] : [],
+              Genres: alInfo.genres || [],
+              Synonyms: ""
+            }
+          };
+
+          // Format episode list agar kompatibel dengan player
+          // Sort ascending (EP 1 duluan) karena AnimeLovers urutan terbaru di atas
+          const alEpisodes = (alInfo.episodes || [])
+            .map((ep) => ({
+              id: `ep=${ep.episodeNumber}`,
+              episode_no: ep.episodeNumber,
+              slug: ep.id,   // slug episode untuk streaming langsung
+              source: "AL",
+              tmdb: null
+            }))
+            .sort((a, b) => a.episode_no - b.episode_no);
+
+          setAnimeInfo(fakeAnimeInfo);
+          setSeasons(null);
+          setEpisodes(alEpisodes);
+          setTotalEpisodes(alEpisodes.length);
+
+          const newEpisodeId = initialEpisodeId || (alEpisodes.length > 0 ? String(alEpisodes[0].episode_no) : null);
+          setEpisodeId(newEpisodeId);
+          if (!alEpisodes.length) setBuffering(false);
+          return;
+        }
+
+        // ── MODE NORMAL: Ambil dari AniList ──
         // Ambil Anime Info (AniList) terlebih dahulu untuk dapat judul
         const animeDataResponse = await getAnimeInfo(animeId, false);
 

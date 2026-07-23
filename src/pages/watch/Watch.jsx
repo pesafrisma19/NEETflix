@@ -45,7 +45,13 @@ export default function Watch() {
   const location = useLocation();
   const navigate = useNavigate();
   const { id: paramSlug } = useParams();
-  const animeId = paramSlug ? paramSlug.split("-").pop() : null;
+  // Untuk konten AL-only (tidak ada di AniList), ID-nya adalah "AL-{slug}"
+  // URL-nya: /watch/one-piece-live-action-AL-one-piece-live-action
+  // Perlu diekstrak bagian "AL-one-piece-live-action" dari paramSlug
+  const alIndex = paramSlug ? paramSlug.indexOf("-AL-") : -1;
+  const animeId = alIndex !== -1
+    ? paramSlug.slice(alIndex + 1)               // → "AL-one-piece-live-action"
+    : (paramSlug ? paramSlug.split("-").pop() : null); // → "16498" (AniList ID biasa)
   const queryParams = new URLSearchParams(location.search);
   let initialEpisodeId = queryParams.get("ep");
   const [tags, setTags] = useState([]);
@@ -656,12 +662,15 @@ export default function Watch() {
                 </span>
                 {` DUB in HD quality.`}
               </p>
+              {/* Sembunyikan "View detail" untuk konten AL-only karena tidak ada halaman info AniList */}
+              {!String(animeId).startsWith("AL-") && (
               <Link
                 to={`/${formatSlug(animeInfo?.title || animeInfo?.japanese_title, animeId)}`}
                 className="w-fit text-[13px] bg-white rounded-[12px] px-[10px] py-1 text-black"
               >
                 View detail
               </Link>
+              )}
             </div>
           </div>
         </div>

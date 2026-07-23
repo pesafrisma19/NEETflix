@@ -243,13 +243,17 @@ function AnimeInfo({ random = false }) {
       document.title = `${website_name} | Free anime streaming platform`;
     };
   }, [animeInfo]);
+  useEffect(() => {
+    if (!loading && !error && !animeInfo) {
+      navigate("/404-not-found-page");
+    }
+  }, [loading, error, animeInfo, navigate]);
   if (loading) return <Loader type="animeInfo" />;
   if (error) {
     return <Error />;
   }
   if (!animeInfo) {
-    navigate("/404-not-found-page");
-    return undefined;
+    return null;
   }
   const { title, japanese_title, poster, animeInfo: info } = animeInfo;
   const tags = [

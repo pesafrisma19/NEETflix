@@ -36,6 +36,8 @@ function formatCard(m) {
   };
 }
 
+const NEETFLIXAPI = import.meta.env.VITE_NEETFLIXAPI_URL || "http://localhost:4444";
+
 const getSearch = async (keyword, page) => {
   if (!page) page = 1;
   try {
@@ -45,10 +47,37 @@ const getSearch = async (keyword, page) => {
     });
 
     const pageData = response.data.data.Page;
-    
+    const anilistResults = pageData.media.map(formatCard).filter(Boolean);
+
+    // Jika AniList punya hasil → kembalikan langsung
+    if (anilistResults.length > 0) {
+      return {
+        data: anilistResults,
+        totalPage: pageData.pageInfo.lastPage
+      };
+    }
+
+    // Jika AniList kosong → fallback ke AnimeLovers (untuk konten tidak ada di AniList)
+    console.log(`[Search] AniList kosong untuk "${keyword}", mencoba AnimeLovers...`);
+    const alRes = await axios.get(`${NEETFLIXAPI}/api/animelovers/search?q=${encodeURIComponent(keyword)}&page=${page}`);
+    const alItems = alRes.data?.results || alRes.data || [];
+
     return {
-      data: pageData.media.map(formatCard).filter(Boolean),
-      totalPage: pageData.pageInfo.lastPage
+      data: alItems.map(item => ({
+        id: `AL-${item.id}`,
+        title: item.title,
+        japanese_title: item.title,
+        poster: (item.image || "").replace(/https:\/\/i\d+\.wp\.com\//, "https://"),
+        tvInfo: {
+          showType: item.type || "TV",
+          duration: "?",
+          rating: "PG-13",
+          eps: item.total_episode || "?",
+          sub: item.total_episode || "?",
+          dub: null
+        }
+      })),
+      totalPage: 1
     };
   } catch (err) {
     console.error("Error fetching search result:", err);
