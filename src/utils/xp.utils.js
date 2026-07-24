@@ -25,7 +25,7 @@ export const formatWhatsAppDate = (dateString) => {
 };
 
 export const getRankTitle = (level) => {
-  if (level >= 999) return "NEETflix Lovers 👑";
+  if (level >= 999) return "NEETflix Lovers";
   if (level >= 800) return "Kami-sama";
   if (level >= 500) return "Isekai Protagonist";
   if (level >= 200) return "Hikikomori";
@@ -46,7 +46,7 @@ export const FRAME_LIST = [
   { id: "avatar-frame-silver", name: "Silver Frame", reqType: "level", reqValue: 50, icon: "🥈", desc: "Mencapai Level 50 (Otaku)" },
   { id: "avatar-frame-gold", name: "Gold Animated Frame", reqType: "level", reqValue: 100, icon: "🥇", desc: "Mencapai Level 100 (Weaboo)" },
   { id: "avatar-frame-mythic", name: "Mythic Neon Frame", reqType: "level", reqValue: 500, icon: "🔮", desc: "Mencapai Level 500 (Isekai Protagonist)" },
-  { id: "avatar-frame-vip", name: "VIP Royal Rainbow", reqType: "vip", reqValue: true, icon: "👑", desc: "Khusus Member VIP Berlangganan" },
+  { id: "avatar-frame-vip", name: "VIP Royal Rainbow", reqType: "vip", reqValue: true, icon: "faCrown", desc: "Khusus Member VIP Berlangganan" },
   { id: "avatar-frame-matrix", name: "Yap Matrix Frame", reqType: "comments_count", reqValue: 50, icon: "🟢", desc: "Kirim minimal 50 Komentar/Chat" },
   { id: "avatar-frame-pulse", name: "Neon Pulse Frame", reqType: "comments_count", reqValue: 200, icon: "🟣", desc: "Kirim minimal 200 Komentar/Chat" },
   { id: "avatar-frame-fire", name: "Marathoner Fire Frame", reqType: "episodes_watched", reqValue: 50, icon: "🔥", desc: "Tonton minimal 50 Episode" },
@@ -59,28 +59,55 @@ export const TITLE_LIST = [
   { id: "Spammer Pemula", name: "Spammer Pemula", reqType: "comments_count", reqValue: 10, icon: "💬" },
   { id: "Yap Master", name: "Yap Master", reqType: "comments_count", reqValue: 50, icon: "🟢" },
   { id: "King of Chatroom", name: "King of Chatroom", reqType: "comments_count", reqValue: 200, icon: "🟣" },
+  { id: "Yap Overlord", name: "Yap Overlord", reqType: "comments_count", reqValue: 500, icon: "⚡" },
+  { id: "Legendary Orator", name: "Legendary Orator", reqType: "comments_count", reqValue: 1000, icon: "📢" },
   { id: "Casual Watcher", name: "Casual Watcher", reqType: "episodes_watched", reqValue: 10, icon: "🎬" },
   { id: "Marathoner", name: "Marathoner", reqType: "episodes_watched", reqValue: 50, icon: "🔥" },
   { id: "Anime Addict", name: "Anime Addict", reqType: "episodes_watched", reqValue: 150, icon: "🐉" },
+  { id: "Otaku True Legend", name: "Otaku True Legend", reqType: "episodes_watched", reqValue: 500, icon: "💫" },
+  { id: "God of Binge Watch", name: "God of Binge Watch", reqType: "episodes_watched", reqValue: 1000, icon: "faCrown" },
+  { id: "Dimensional Traveler", name: "Dimensional Traveler", reqType: "episodes_watched", reqValue: 2000, icon: "🌌" },
   { id: "Manga Reader", name: "Manga Reader", reqType: "chapters_read", reqValue: 10, icon: "📖" },
   { id: "Bookworm", name: "Bookworm", reqType: "chapters_read", reqValue: 50, icon: "📜" },
   { id: "Lore Master", name: "Lore Master", reqType: "chapters_read", reqValue: 150, icon: "🔮" },
+  { id: "Comic Scholar", name: "Comic Scholar", reqType: "chapters_read", reqValue: 500, icon: "✒️" },
+  { id: "Grandmaster Reader", name: "Grandmaster Reader", reqType: "chapters_read", reqValue: 1000, icon: "🏺" },
+  { id: "Library Guardian", name: "Library Guardian", reqType: "chapters_read", reqValue: 2000, icon: "🏰" },
   { id: "Generous Heart", name: "Generous Heart", reqType: "likes_count", reqValue: 25, icon: "👍" },
-  { id: "Collector", name: "Collector", reqType: "bookmarks_count", reqValue: 10, icon: "📌" }
+  { id: "Supreme Supporter", name: "Supreme Supporter", reqType: "likes_count", reqValue: 100, icon: "💖" },
+  { id: "Collector", name: "Collector", reqType: "bookmarks_count", reqValue: 10, icon: "📌" },
+  { id: "Vault Keeper", name: "Vault Keeper", reqType: "bookmarks_count", reqValue: 50, icon: "💎" }
 ];
 
 export const ACHIEVEMENT_LIST = [
-  { id: "ach_comment_10", title: "Spammer Pemula", desc: "Kirim 10 Komentar/Chat", reqType: "comments_count", target: 10, rewardXp: 50, rewardTitle: "Spammer Pemula" },
-  { id: "ach_comment_50", title: "Yap Master", desc: "Kirim 50 Komentar/Chat", reqType: "comments_count", target: 50, rewardFrame: "avatar-frame-matrix", rewardTitle: "Yap Master" },
-  { id: "ach_comment_200", title: "King of Chatroom", desc: "Kirim 200 Komentar/Chat", reqType: "comments_count", target: 200, rewardFrame: "avatar-frame-pulse", rewardTitle: "King of Chatroom" },
-  { id: "ach_watch_10", title: "Casual Watcher", desc: "Tonton 10 Episode", reqType: "episodes_watched", target: 10, rewardXp: 50, rewardTitle: "Casual Watcher" },
-  { id: "ach_watch_50", title: "Marathoner", desc: "Tonton 50 Episode", reqType: "episodes_watched", target: 50, rewardFrame: "avatar-frame-fire", rewardTitle: "Marathoner" },
-  { id: "ach_watch_150", title: "Anime Addict", desc: "Tonton 150 Episode", reqType: "episodes_watched", target: 150, rewardFrame: "avatar-frame-dragon", rewardTitle: "Anime Addict" },
-  { id: "ach_read_10", title: "Manga Reader", desc: "Baca 10 Chapter Komik", reqType: "chapters_read", target: 10, rewardXp: 50, rewardTitle: "Manga Reader" },
-  { id: "ach_read_50", title: "Bookworm", desc: "Baca 50 Chapter Komik", reqType: "chapters_read", target: 50, rewardFrame: "avatar-frame-emerald", rewardTitle: "Bookworm" },
-  { id: "ach_read_150", title: "Lore Master", desc: "Baca 150 Chapter Komik", reqType: "chapters_read", target: 150, rewardFrame: "avatar-frame-mystic", rewardTitle: "Lore Master" },
-  { id: "ach_like_25", title: "Generous Heart", desc: "Berikan 25 Like Komentar", reqType: "likes_count", target: 25, rewardXp: 50, rewardTitle: "Generous Heart" },
-  { id: "ach_bookmark_10", title: "Collector", desc: "Simpan 10 Item ke Watchlist", reqType: "bookmarks_count", target: 10, rewardXp: 50, rewardTitle: "Collector" }
+  // 🎬 Kategori Nonton Episode
+  { id: "ach_watch_10", category: "watch", title: "Casual Watcher", desc: "Tonton 10 Episode Anime/Film", reqType: "episodes_watched", target: 10, rewardXp: 50, rewardTitle: "Casual Watcher" },
+  { id: "ach_watch_50", category: "watch", title: "Marathoner", desc: "Tonton 50 Episode Anime/Film", reqType: "episodes_watched", target: 50, rewardFrame: "avatar-frame-fire", rewardTitle: "Marathoner" },
+  { id: "ach_watch_150", category: "watch", title: "Anime Addict", desc: "Tonton 150 Episode Anime/Film", reqType: "episodes_watched", target: 150, rewardFrame: "avatar-frame-dragon", rewardTitle: "Anime Addict" },
+  { id: "ach_watch_500", category: "watch", title: "Otaku True Legend", desc: "Tonton 500 Episode Anime/Film", reqType: "episodes_watched", target: 500, rewardXp: 500, rewardTitle: "Otaku True Legend" },
+  { id: "ach_watch_1000", category: "watch", title: "God of Binge Watch", desc: "Tonton 1.000 Episode Anime/Film", reqType: "episodes_watched", target: 1000, rewardXp: 1000, rewardTitle: "God of Binge Watch" },
+  { id: "ach_watch_2000", category: "watch", title: "Dimensional Traveler", desc: "Tonton 2.000 Episode Anime/Film", reqType: "episodes_watched", target: 2000, rewardXp: 2000, rewardTitle: "Dimensional Traveler" },
+
+  // 📖 Kategori Baca Komik
+  { id: "ach_read_10", category: "read", title: "Manga Reader", desc: "Baca 10 Chapter Komik", reqType: "chapters_read", target: 10, rewardXp: 50, rewardTitle: "Manga Reader" },
+  { id: "ach_read_50", category: "read", title: "Bookworm", desc: "Baca 50 Chapter Komik", reqType: "chapters_read", target: 50, rewardFrame: "avatar-frame-emerald", rewardTitle: "Bookworm" },
+  { id: "ach_read_150", category: "read", title: "Lore Master", desc: "Baca 150 Chapter Komik", reqType: "chapters_read", target: 150, rewardFrame: "avatar-frame-mystic", rewardTitle: "Lore Master" },
+  { id: "ach_read_500", category: "read", title: "Comic Scholar", desc: "Baca 500 Chapter Komik", reqType: "chapters_read", target: 500, rewardXp: 500, rewardTitle: "Comic Scholar" },
+  { id: "ach_read_1000", category: "read", title: "Grandmaster Reader", desc: "Baca 1.000 Chapter Komik", reqType: "chapters_read", target: 1000, rewardXp: 1000, rewardTitle: "Grandmaster Reader" },
+  { id: "ach_read_2000", category: "read", title: "Library Guardian", desc: "Baca 2.000 Chapter Komik", reqType: "chapters_read", target: 2000, rewardXp: 2000, rewardTitle: "Library Guardian" },
+
+  // 💬 Kategori Komentar & Chat
+  { id: "ach_comment_10", category: "comment", title: "Spammer Pemula", desc: "Kirim 10 Komentar/Chat", reqType: "comments_count", target: 10, rewardXp: 50, rewardTitle: "Spammer Pemula" },
+  { id: "ach_comment_50", category: "comment", title: "Yap Master", desc: "Kirim 50 Komentar/Chat", reqType: "comments_count", target: 50, rewardFrame: "avatar-frame-matrix", rewardTitle: "Yap Master" },
+  { id: "ach_comment_200", category: "comment", title: "King of Chatroom", desc: "Kirim 200 Komentar/Chat", reqType: "comments_count", target: 200, rewardFrame: "avatar-frame-pulse", rewardTitle: "King of Chatroom" },
+  { id: "ach_comment_500", category: "comment", title: "Yap Overlord", desc: "Kirim 500 Komentar/Chat", reqType: "comments_count", target: 500, rewardXp: 500, rewardTitle: "Yap Overlord" },
+  { id: "ach_comment_1000", category: "comment", title: "Legendary Orator", desc: "Kirim 1.000 Komentar/Chat", reqType: "comments_count", target: 1000, rewardXp: 1000, rewardTitle: "Legendary Orator" },
+
+  // ⭐ Kategori Sosial & Watchlist
+  { id: "ach_like_25", category: "social", title: "Generous Heart", desc: "Berikan 25 Like Komentar", reqType: "likes_count", target: 25, rewardXp: 50, rewardTitle: "Generous Heart" },
+  { id: "ach_like_100", category: "social", title: "Supreme Supporter", desc: "Berikan 100 Like Komentar", reqType: "likes_count", target: 100, rewardXp: 100, rewardTitle: "Supreme Supporter" },
+  { id: "ach_bookmark_10", category: "social", title: "Collector", desc: "Simpan 10 Item ke Watchlist", reqType: "bookmarks_count", target: 10, rewardXp: 50, rewardTitle: "Collector" },
+  { id: "ach_bookmark_50", category: "social", title: "Vault Keeper", desc: "Simpan 50 Item ke Watchlist", reqType: "bookmarks_count", target: 50, rewardXp: 150, rewardTitle: "Vault Keeper" }
 ];
 
 export const isItemUnlocked = (item, level = 1, isVip = false, stats = {}) => {
@@ -265,5 +292,30 @@ export const addXpAndCheckLevelUp = async (userId, actionType, xpAmount, referen
   } catch (error) {
     console.error("Gagal menambahkan XP:", error);
     return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Membatasi riwayat tontonan pengguna di database Supabase hingga batas maksimal (default: 20 item).
+ * Jika melebihi batas, data terlama (overflow) akan dihapus secara otomatis.
+ */
+export const trimWatchHistory = async (userId, maxCap = 20) => {
+  if (!userId) return;
+  try {
+    const { data } = await supabase
+      .from('watch_history')
+      .select('id')
+      .eq('user_id', userId)
+      .order('watched_at', { ascending: false });
+
+    if (data && data.length > maxCap) {
+      const overflowIds = data.slice(maxCap).map(item => item.id);
+      await supabase
+        .from('watch_history')
+        .delete()
+        .in('id', overflowIds);
+    }
+  } catch (err) {
+    console.error("Gagal melakukan trim watch_history:", err);
   }
 };

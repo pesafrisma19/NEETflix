@@ -32,7 +32,7 @@ import getChapterStyles from "./getChapterStyle";
 import artplayerPluginHlsControl from "artplayer-plugin-hls-control";
 import artplayerPluginUploadSubtitle from "./artplayerPluginUploadSubtitle";
 import { supabase } from "../../lib/supabaseClient";
-import { addXpAndCheckLevelUp } from "../../utils/xp.utils";
+import { addXpAndCheckLevelUp, trimWatchHistory } from "../../utils/xp.utils";
 
 Artplayer.LOG_VERSION = false;
 Artplayer.CONTEXTMENU = false;
@@ -128,6 +128,7 @@ export default function Player({
 
         // Tambah XP +10 untuk episode yang ditonton
         addXpAndCheckLevelUp(session.user.id, "watch_episode", 10, episodeId);
+        trimWatchHistory(session.user.id, 20);
       } catch (err) {
         console.error("Failed to save watch history to DB", err);
       }

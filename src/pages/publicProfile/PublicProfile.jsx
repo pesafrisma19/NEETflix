@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useParams, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faHistory, faLock, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faHistory, faLock, faShieldAlt, faCrown } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 
 import { getRankTitle, xpToNextLevel, getAvatarFrameClass } from "../../utils/xp.utils";
@@ -90,17 +90,23 @@ export default function PublicProfile() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative -mt-28 z-20">
         <div className="flex flex-col md:flex-row gap-8 items-center md:items-end text-center md:text-left">
-          {/* Avatar */}
+          {/* Avatar with Dynamic Frame & Discord-Style Glowing Crown */}
           <div className="relative group">
-            <div className={`absolute -inset-1 rounded-full blur opacity-30 ${profile?.is_vip ? 'bg-gradient-to-r from-[#ffbade] to-[#ff7eb3]' : 'bg-gray-600'} transition duration-1000 group-hover:opacity-60`}></div>
+            {profile?.is_vip && (
+              <div className="absolute -top-6 left-1/2 -translate-x-1/2 text-3xl md:text-4xl z-30 vip-crown-glow">
+                <FontAwesomeIcon icon={faCrown} className="text-yellow-400" />
+              </div>
+            )}
+            <div className={`absolute -inset-1 rounded-full blur opacity-40 ${profile?.is_vip ? 'bg-gradient-to-r from-[#ffbade] via-amber-400 to-[#ff7eb3]' : 'bg-gray-600'} transition duration-1000 group-hover:opacity-70`}></div>
             <img 
               src={avatarUrl} 
               alt="Avatar" 
               className={`relative w-36 h-36 md:w-44 md:h-44 rounded-full object-cover bg-[#201F31] shadow-2xl z-10 ${avatarFrameClass}`}
             />
             {profile?.is_vip && (
-              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black shadow-lg z-20 tracking-wider"
+              <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-4 py-1.5 rounded-full text-xs font-black shadow-lg z-20 tracking-wider flex items-center gap-1.5 border border-amber-300/40"
                    style={{ backgroundColor: customs?.badge_bg_color || '#6a0dad', color: customs?.badge_text_color || '#fff', boxShadow: `0 4px 14px 0 ${customs?.badge_bg_color || '#6a0dad'}80` }}>
+                <FontAwesomeIcon icon={faCrown} className="text-yellow-300 text-xs" />
                 {customs?.badge_text || "VIP"}
               </div>
             )}

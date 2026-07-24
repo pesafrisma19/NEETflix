@@ -2,11 +2,23 @@ import { useEffect, useState, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt, faCrown, faEye, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faStar, faHistory, faSignOutAlt, faCamera, faShareAlt, faCrown, faEye, faTrash, faTrophy, faFilm, faBookOpen, faComments, faCommentDots, faThumbsUp, faBookmark, faMedal, faAward, faFire, faDragon, faBullseye, faGem, faCertificate, faImages, faTag, faScroll, faShieldAlt, faCheck, faCheckCircle, faLock, faUnlock, faTv, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { faDiscord, faInstagram, faTwitter, faTiktok } from "@fortawesome/free-brands-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import getAnimeInfo from "../../utils/getAnimeInfo.utils";
 import { getRankTitle, xpToNextLevel, getAvatarFrameClass, FRAME_LIST, TITLE_LIST, ACHIEVEMENT_LIST, isItemUnlocked } from "../../utils/xp.utils";
+
+const getItemIcon = (item) => {
+  const reqType = item?.reqType || item?.category;
+  if (reqType === "comments_count" || item?.category === "comment") return { icon: faComments, color: "text-indigo-400" };
+  if (reqType === "episodes_watched" || item?.category === "watch") return { icon: faFilm, color: "text-[#ffbade]" };
+  if (reqType === "chapters_read" || item?.category === "read") return { icon: faBookOpen, color: "text-emerald-400" };
+  if (reqType === "likes_count" || (item?.category === "social" && item?.id?.includes("like"))) return { icon: faThumbsUp, color: "text-rose-400" };
+  if (reqType === "bookmarks_count" || (item?.category === "social" && item?.id?.includes("bookmark"))) return { icon: faBookmark, color: "text-amber-400" };
+  if (reqType === "level") return { icon: faMedal, color: "text-yellow-400" };
+  if (reqType === "vip") return { icon: faCrown, color: "text-purple-400" };
+  return { icon: faAward, color: "text-yellow-400" };
+};
 
 // Fungsi untuk mengkonversi gambar apapun menjadi WebP dan mengompres ukurannya
 const convertToWebP = (file) => {
@@ -96,8 +108,31 @@ export default function Profile() {
   const [xpLogsList, setXpLogsList] = useState([]);
   const [xpLogsLoading, setXpLogsLoading] = useState(false);
 
+  const fetchRecentXpLogs = async (userId) => {
+    if (!userId) return;
+    setXpLogsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("xp_logs")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setXpLogsList(data || []);
+    } catch (err) {
+      console.error("Gagal memuat riwayat XP:", err);
+    } finally {
+      setXpLogsLoading(false);
+    }
+  };
+
   const [riwayatFilter, setRiwayatFilter] = useState("all");
+  const [riwayatSubTab, setRiwayatSubTab] = useState("history"); // "history" | "watchlist"
+  const [riwayatSearchQuery, setRiwayatSearchQuery] = useState("");
   const [koleksiSubTab, setKoleksiSubTab] = useState("bingkai"); // "bingkai" | "gelar" | "pencapaian"
+  const [achCategory, setAchCategory] = useState("all"); // "all" | "watch" | "read" | "comment" | "social"
 
   const handleEquipItem = async (type, itemId) => {
     if (!user) return;
@@ -504,20 +539,26 @@ export default function Profile() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 relative -mt-20 z-20">
         <div className="flex flex-col md:flex-row gap-6 items-center md:items-end text-center md:text-left">
-          {/* Avatar with Dynamic Frame */}
+          {/* Avatar with Dynamic Frame & Discord-Style Glowing Crown */}
           <div className="relative group cursor-pointer" onClick={handleEditAvatarClick}>
+            {profile?.is_vip && (
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 text-2xl md:text-3xl z-20 vip-crown-glow">
+                <FontAwesomeIcon icon={faCrown} className="text-yellow-400" />
+              </div>
+            )}
             <img 
               src={avatarUrl} 
               alt="Avatar" 
               className={`w-32 h-32 md:w-40 md:h-40 rounded-full object-cover bg-[#201F31] ${avatarFrameClass}`}
             />
-            <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute inset-0 rounded-full bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
               <FontAwesomeIcon icon={faCamera} className="text-3xl text-white" />
             </div>
 
             {profile?.is_vip && (
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-bold shadow-md"
+              <div className="absolute -bottom-2.5 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-full text-xs font-black shadow-lg z-20 flex items-center gap-1.5 border border-amber-300/40"
                    style={{ backgroundColor: customs?.badge_bg_color || '#6a0dad', color: customs?.badge_text_color || '#fff' }}>
+                <FontAwesomeIcon icon={faCrown} className="text-yellow-300 text-[10px]" />
                 {customs?.badge_text || "VIP"}
               </div>
             )}
@@ -682,31 +723,31 @@ export default function Profile() {
                 {/* Information Box: Aturan & Batas Maksimal XP Harian (Daily Cap Rules) */}
                 <div className="mt-6 bg-[#161523] p-5 rounded-xl border border-gray-800 text-left">
                   <h3 className="text-sm font-bold text-[#ffbade] mb-3 flex items-center gap-2">
-                    📜 Aturan & Batas Maksimal XP Harian (Anti-Spam & Fair Play)
+                    <FontAwesomeIcon icon={faScroll} className="text-[#ffbade]" /> Aturan & Batas Maksimal XP Harian (Anti-Spam & Fair Play)
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-xs text-gray-300">
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">💬 Komentar</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faComments} className="text-indigo-400" /> Komentar</span>
                       <span>Max 8x / hari (+25 XP/komentar) ➔ <strong className="text-[#ffbade]">Max 200 XP</strong></span>
                     </div>
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">🗨️ Live Chat</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faCommentDots} className="text-cyan-400" /> Live Chat</span>
                       <span>Max 10x / hari (+5 XP/pesan) ➔ <strong className="text-[#ffbade]">Max 50 XP</strong></span>
                     </div>
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">🎬 Nonton Episode</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faFilm} className="text-[#ffbade]" /> Nonton Episode</span>
                       <span>Max 10x / hari (+10 XP/ep) ➔ <strong className="text-[#ffbade]">Max 100 XP</strong></span>
                     </div>
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">📖 Baca Komik</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faBookOpen} className="text-emerald-400" /> Baca Komik</span>
                       <span>Max 10x / hari (+5 XP/ch) ➔ <strong className="text-[#ffbade]">Max 50 XP</strong></span>
                     </div>
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">👍 Suka / Like</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faThumbsUp} className="text-rose-400" /> Suka / Like</span>
                       <span>Max 10x / hari (+5 XP/like) ➔ <strong className="text-[#ffbade]">Max 50 XP</strong></span>
                     </div>
                     <div className="bg-[#201F31] p-3 rounded-lg border border-gray-800/80">
-                      <span className="font-bold text-white block mb-0.5">⭐ Bookmark</span>
+                      <span className="font-bold text-white mb-0.5 flex items-center gap-1.5"><FontAwesomeIcon icon={faBookmark} className="text-amber-400" /> Bookmark</span>
                       <span>Max 5x / hari (+3 XP/bookmark) ➔ <strong className="text-[#ffbade]">Max 15 XP</strong></span>
                     </div>
                   </div>
@@ -821,25 +862,80 @@ export default function Profile() {
           )}
 
           {activeTab === "riwayat" && (
-            <div className="space-y-8 text-left">
+            <div className="space-y-6 text-left">
+              {/* Sub Tab Switcher: Riwayat vs Watchlist & Search Bar */}
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+                <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 shrink-0">
+                  <button
+                    onClick={() => setRiwayatSubTab("history")}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+                      riwayatSubTab === "history"
+                        ? "bg-[#ffbade] text-black shadow-lg"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faHistory} />
+                    <span>Riwayat Tontonan</span>
+                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-black/20 font-black">
+                      {history.length}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setRiwayatSubTab("watchlist")}
+                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 ${
+                      riwayatSubTab === "watchlist"
+                        ? "bg-[#ffbade] text-black shadow-lg"
+                        : "text-gray-400 hover:text-white"
+                    }`}
+                  >
+                    <FontAwesomeIcon icon={faStar} />
+                    <span>Watchlist & Favorit</span>
+                    <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-black/20 font-black">
+                      {watchlist.length}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Search Input Bar */}
+                <div className="relative flex-1 max-w-sm">
+                  <FontAwesomeIcon icon={faSearch} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none" />
+                  <input
+                    type="text"
+                    placeholder={`Cari di ${riwayatSubTab === "history" ? "riwayat tontonan" : "watchlist & favorit"}...`}
+                    value={riwayatSearchQuery}
+                    onChange={(e) => setRiwayatSearchQuery(e.target.value)}
+                    className="w-full bg-[#1A1927] text-xs text-white pl-9 pr-8 py-2.5 rounded-xl border border-gray-800 focus:border-[#ffbade] focus:outline-none transition-all placeholder:text-gray-500"
+                  />
+                  {riwayatSearchQuery && (
+                    <button
+                      onClick={() => setRiwayatSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white text-xs"
+                    >
+                      <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
               {/* Category Filter Pills */}
               <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-full max-w-full overflow-x-auto custom-scrollbar flex-nowrap">
                 {[
-                  { id: "all", label: "Semua Kategori" },
-                  { id: "anime", label: "📺 Anime" },
-                  { id: "comic", label: "📖 Komik" },
-                  { id: "donghua", label: "🐉 Donghua" },
-                  { id: "film", label: "🎬 Film" }
+                  { id: "all", label: "Semua Kategori", icon: faStar },
+                  { id: "anime", label: "Anime", icon: faTv },
+                  { id: "comic", label: "Komik", icon: faBookOpen },
+                  { id: "donghua", label: "Donghua", icon: faDragon },
+                  { id: "film", label: "Film", icon: faFilm }
                 ].map(filter => (
                   <button
                     key={filter.id}
                     onClick={() => setRiwayatFilter(filter.id)}
-                    className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap ${
+                    className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-1.5 ${
                       riwayatFilter === filter.id
                         ? "bg-[#ffbade] text-black shadow"
                         : "text-gray-400 hover:text-white"
                     }`}
                   >
+                    <FontAwesomeIcon icon={filter.icon} />
                     {filter.label}
                   </button>
                 ))}
@@ -849,148 +945,179 @@ export default function Profile() {
                 <div className="flex justify-center items-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ffbade]"></div></div>
               ) : (
                 <>
-                  {/* Watch History */}
-                  <div>
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faHistory} /> Terakhir Ditonton</h2>
-                    {(() => {
-                      const filteredHistory = riwayatFilter === "all" 
-                        ? history 
-                        : history.filter(i => (i.details?.mediaType || 'anime') === riwayatFilter);
+                  {/* SUB TAB 1: WATCH HISTORY */}
+                  {riwayatSubTab === "history" && (
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold flex items-center gap-2">
+                          <FontAwesomeIcon icon={faHistory} className="text-[#ffbade]" /> Terakhir Ditonton
+                        </h2>
+                        <span className="text-xs text-gray-400 font-medium">Max 20 Riwayat Terbaru</span>
+                      </div>
+                      {(() => {
+                        const filteredHistory = history.filter(i => {
+                          const matchCat = riwayatFilter === "all" || (i.details?.mediaType || 'anime') === riwayatFilter;
+                          const titleStr = (i.details?.title || i.anime_id || "").toLowerCase();
+                          const matchSearch = !riwayatSearchQuery.trim() || titleStr.includes(riwayatSearchQuery.toLowerCase());
+                          return matchCat && matchSearch;
+                        });
 
-                      if (filteredHistory.length === 0) {
+                        if (filteredHistory.length === 0) {
+                          return (
+                            <div className="bg-[#201F31] p-8 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center gap-2">
+                              <FontAwesomeIcon icon={faHistory} className="text-3xl text-gray-600 mb-1" />
+                              <p className="text-gray-300 font-semibold text-sm">Tidak ada riwayat tontonan ditemukan</p>
+                              <p className="text-xs text-gray-500">Coba ubah kata kunci pencarian atau kategori filter kamu.</p>
+                            </div>
+                          );
+                        }
+
                         return (
-                          <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
-                            <p className="text-gray-400">Riwayat tontonan kosong untuk kategori ini</p>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
-                          {filteredHistory.map((item) => {
-                            const mediaType = item.details?.mediaType || 'anime';
-                            let targetUrl = `/watch/${item.anime_id}?ep=${item.episode_id}`;
-                            if (mediaType === 'comic') {
-                              targetUrl = `/comic/read/${item.episode_id || item.anime_id}`;
-                            } else if (mediaType === 'film') {
-                              targetUrl = item.episode_id && item.episode_id !== item.anime_id
-                                ? `/film/watch/${item.anime_id}?epId=${encodeURIComponent(item.episode_id)}`
-                                : `/film/watch/${item.anime_id}`;
-                            } else if (mediaType === 'donghua') {
-                              targetUrl = `/donghua/watch/${item.anime_id}?ep=${encodeURIComponent(item.episode_id)}`;
-                            }
-
-                            const epStr = String(item.episode_id || '');
-                            let cleanEp = '';
-
-                            if (mediaType === 'film' && (!item.episode_id || item.episode_id === item.anime_id)) {
-                              cleanEp = 'Movie';
-                            } else {
-                              const match = epStr.match(/(?:episode|chapter|ep)[-_=\s]*(\d+)/i) 
-                                || epStr.match(/(?:__|_|-)(\d+)$/) 
-                                || epStr.match(/(\d+)/);
-                              if (match) {
-                                const num = parseInt(match[1], 10);
-                                cleanEp = isNaN(num) ? match[1] : String(num);
-                              } else {
-                                cleanEp = epStr.replace(/^chapter-|^episode-|^ep=/i, '');
+                          <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
+                            {filteredHistory.map((item) => {
+                              const mediaType = item.details?.mediaType || 'anime';
+                              let targetUrl = `/watch/${item.anime_id}?ep=${item.episode_id}`;
+                              if (mediaType === 'comic') {
+                                targetUrl = `/comic/read/${item.episode_id || item.anime_id}`;
+                              } else if (mediaType === 'film') {
+                                targetUrl = item.episode_id && item.episode_id !== item.anime_id
+                                  ? `/film/watch/${item.anime_id}?epId=${encodeURIComponent(item.episode_id)}`
+                                  : `/film/watch/${item.anime_id}`;
+                              } else if (mediaType === 'donghua') {
+                                targetUrl = `/donghua/watch/${item.anime_id}?ep=${encodeURIComponent(item.episode_id)}`;
                               }
-                            }
 
-                            let label = '';
-                            if (cleanEp === 'Movie') {
-                              label = 'Movie';
-                            } else if (mediaType === 'comic') {
-                              label = `Ch. ${cleanEp}`;
-                            } else {
-                              label = `Ep ${cleanEp}`;
-                            }
+                              const epStr = String(item.episode_id || '');
+                              let cleanEp = '';
 
-                            return (
-                              <div key={`hist-${item.anime_id}-${item.episode_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all relative group" onClick={() => navigate(targetUrl)}>
-                                {/* Category Badge */}
-                                <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
-                                  {mediaType === 'comic' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-green-500 text-black shadow">KOMIK</span>}
-                                  {mediaType === 'film' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-yellow-500 text-black shadow">FILM</span>}
-                                  {mediaType === 'donghua' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-purple-500 text-white shadow">DONGHUA</span>}
-                                  {mediaType === 'anime' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-[#ffbade] text-black shadow">ANIME</span>}
-                                </div>
+                              if (mediaType === 'film' && (!item.episode_id || item.episode_id === item.anime_id)) {
+                                cleanEp = 'Movie';
+                              } else {
+                                const match = epStr.match(/(?:episode|chapter|ep)[-_=\s]*(\d+)/i) 
+                                  || epStr.match(/(?:__|_|-)(\d+)$/) 
+                                  || epStr.match(/(\d+)/);
+                                if (match) {
+                                  const num = parseInt(match[1], 10);
+                                  cleanEp = isNaN(num) ? match[1] : String(num);
+                                } else {
+                                  cleanEp = epStr.replace(/^chapter-|^episode-|^ep=/i, '');
+                                }
+                              }
 
-                                <button
-                                  onClick={(e) => handleDeleteHistory(e, item)}
-                                  className="absolute top-1.5 right-1.5 z-20 bg-red-600/90 hover:bg-red-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                                  title="Hapus dari Riwayat"
-                                >
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
-                                <div className="relative aspect-[3/4]">
-                                  <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                                  <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] md:text-xs p-1 text-center font-bold truncate">
-                                    {label}
+                              let label = '';
+                              if (cleanEp === 'Movie') {
+                                label = 'Movie';
+                              } else if (mediaType === 'comic') {
+                                label = `Ch. ${cleanEp}`;
+                              } else {
+                                label = `Ep ${cleanEp}`;
+                              }
+
+                              return (
+                                <div key={`hist-${item.anime_id}-${item.episode_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all relative group" onClick={() => navigate(targetUrl)}>
+                                  {/* Category Badge */}
+                                  <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
+                                    {mediaType === 'comic' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-green-500 text-black shadow">KOMIK</span>}
+                                    {mediaType === 'film' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-yellow-500 text-black shadow">FILM</span>}
+                                    {mediaType === 'donghua' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-purple-500 text-white shadow">DONGHUA</span>}
+                                    {mediaType === 'anime' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-[#ffbade] text-black shadow">ANIME</span>}
                                   </div>
+
+                                  <button
+                                    onClick={(e) => handleDeleteHistory(e, item)}
+                                    className="absolute top-1.5 right-1.5 z-20 bg-red-600/90 hover:bg-red-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                                    title="Hapus dari Riwayat"
+                                  >
+                                    <FontAwesomeIcon icon={faTrash} />
+                                  </button>
+                                  <div className="relative aspect-[3/4]">
+                                    <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                    <div className="absolute bottom-0 left-0 right-0 bg-black/80 text-white text-[10px] md:text-xs p-1 text-center font-bold truncate">
+                                      {label}
+                                    </div>
+                                  </div>
+                                  <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
                                 </div>
-                                <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Watchlist */}
-                  <div>
-                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2"><FontAwesomeIcon icon={faStar} /> Watchlist & Favorit</h2>
-                    {(() => {
-                      const filteredWatchlist = riwayatFilter === "all" 
-                        ? watchlist 
-                        : watchlist.filter(i => (i.details?.mediaType || 'anime') === riwayatFilter);
-
-                      if (filteredWatchlist.length === 0) {
-                        return (
-                          <div className="bg-[#201F31] p-6 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center">
-                            <p className="text-gray-400">Belum ada tayangan / komik favorit di kategori ini</p>
+                              );
+                            })}
                           </div>
                         );
-                      }
+                      })()}
+                    </div>
+                  )}
 
-                      return (
-                        <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
-                          {filteredWatchlist.map((item) => {
-                            const mediaType = item.details?.mediaType || 'anime';
-                            let targetUrl = `/${item.anime_id}`;
-                            if (mediaType === 'comic') targetUrl = `/comic/${item.anime_id}`;
-                            else if (mediaType === 'film') targetUrl = `/film/${item.anime_id}`;
-                            else if (mediaType === 'donghua') targetUrl = `/donghua/${item.anime_id}`;
+                  {/* SUB TAB 2: WATCHLIST & FAVORIT */}
+                  {riwayatSubTab === "watchlist" && (
+                    <div>
+                      {(() => {
+                        const filteredWatchlist = watchlist.filter(i => {
+                          const matchCat = riwayatFilter === "all" || (i.details?.mediaType || 'anime') === riwayatFilter;
+                          const titleStr = (i.details?.title || i.anime_id || "").toLowerCase();
+                          const matchSearch = !riwayatSearchQuery.trim() || titleStr.includes(riwayatSearchQuery.toLowerCase());
+                          return matchCat && matchSearch;
+                        });
 
-                            return (
-                              <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all relative group" onClick={() => navigate(targetUrl)}>
-                                {/* Category Badge */}
-                                <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
-                                  {mediaType === 'comic' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-green-500 text-black shadow">KOMIK</span>}
-                                  {mediaType === 'film' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-yellow-500 text-black shadow">FILM</span>}
-                                  {mediaType === 'donghua' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-purple-500 text-white shadow">DONGHUA</span>}
-                                  {mediaType === 'anime' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-[#ffbade] text-black shadow">ANIME</span>}
-                                </div>
+                        const displayedWatchlist = riwayatSearchQuery.trim() ? filteredWatchlist : filteredWatchlist.slice(0, 14);
 
-                                <button
-                                  onClick={(e) => handleDeleteWatchlist(e, item)}
-                                  className="absolute top-1.5 right-1.5 z-20 bg-red-600/90 hover:bg-red-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
-                                  title="Hapus dari Watchlist"
-                                >
-                                  <FontAwesomeIcon icon={faTrash} />
-                                </button>
-                                <div className="relative aspect-[3/4]">
-                                  <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
-                                </div>
-                                <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
+                        return (
+                          <>
+                            <div className="flex justify-between items-center mb-4">
+                              <h2 className="text-xl font-bold flex items-center gap-2">
+                                <FontAwesomeIcon icon={faStar} className="text-yellow-400" /> Watchlist & Favorit
+                              </h2>
+                              <span className="text-xs text-gray-400 font-medium">
+                                {riwayatSearchQuery.trim() 
+                                  ? `Hasil Cari (${filteredWatchlist.length} Favorit)` 
+                                  : `Menampilkan ${displayedWatchlist.length} dari ${watchlist.length} Favorit`}
+                              </span>
+                            </div>
+
+                            {displayedWatchlist.length === 0 ? (
+                              <div className="bg-[#201F31] p-8 rounded-2xl border border-gray-800 flex flex-col items-center justify-center text-center gap-2">
+                                <FontAwesomeIcon icon={faStar} className="text-3xl text-gray-600 mb-1" />
+                                <p className="text-gray-300 font-semibold text-sm">Tidak ada tayangan favorit ditemukan</p>
+                                <p className="text-xs text-gray-500">Coba ubah kata kunci pencarian atau simpan tayangan favorit baru.</p>
                               </div>
-                            );
-                          })}
-                        </div>
-                      );
-                    })()}
-                  </div>
+                            ) : (
+                              <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-7 gap-3 md:gap-4">
+                                {displayedWatchlist.map((item) => {
+                                  const mediaType = item.details?.mediaType || 'anime';
+                                  let targetUrl = `/${item.anime_id}`;
+                                  if (mediaType === 'comic') targetUrl = `/comic/${item.anime_id}`;
+                                  else if (mediaType === 'film') targetUrl = `/film/${item.anime_id}`;
+                                  else if (mediaType === 'donghua') targetUrl = `/donghua/${item.anime_id}`;
+
+                                  return (
+                                    <div key={`fav-${item.anime_id}`} className="bg-[#201F31] rounded-xl overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#ffbade] transition-all relative group" onClick={() => navigate(targetUrl)}>
+                                      {/* Category Badge */}
+                                      <div className="absolute top-1.5 left-1.5 z-20 pointer-events-none">
+                                        {mediaType === 'comic' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-green-500 text-black shadow">KOMIK</span>}
+                                        {mediaType === 'film' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-yellow-500 text-black shadow">FILM</span>}
+                                        {mediaType === 'donghua' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-purple-500 text-white shadow">DONGHUA</span>}
+                                        {mediaType === 'anime' && <span className="px-1.5 py-0.5 text-[8px] font-black rounded bg-[#ffbade] text-black shadow">ANIME</span>}
+                                      </div>
+
+                                      <button
+                                        onClick={(e) => handleDeleteWatchlist(e, item)}
+                                        className="absolute top-1.5 right-1.5 z-20 bg-red-600/90 hover:bg-red-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
+                                        title="Hapus dari Watchlist"
+                                      >
+                                        <FontAwesomeIcon icon={faTrash} />
+                                      </button>
+                                      <div className="relative aspect-[3/4]">
+                                        <img src={item.details?.poster || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="} alt={item.details?.title} referrerPolicy="no-referrer" className="w-full h-full object-cover" />
+                                      </div>
+                                      <div className="p-2 truncate text-xs md:text-sm font-semibold text-center">{item.details?.title || item.anime_id}</div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1001,19 +1128,20 @@ export default function Profile() {
               {/* Sub Tabs */}
               <div className="flex gap-2 bg-[#1A1927] p-1.5 rounded-xl border border-gray-800 w-full max-w-full overflow-x-auto custom-scrollbar flex-nowrap">
                 {[
-                  { id: "bingkai", label: "🖼️ Bingkai Avatar" },
-                  { id: "gelar", label: "🏷️ Gelar Spesial" },
-                  { id: "pencapaian", label: "🏆 Pencapaian (Achievements)" }
+                  { id: "bingkai", label: "Bingkai Avatar", icon: faImages },
+                  { id: "gelar", label: "Gelar Spesial", icon: faCertificate },
+                  { id: "pencapaian", label: "Pencapaian", icon: faTrophy }
                 ].map(st => (
                   <button
                     key={st.id}
                     onClick={() => setKoleksiSubTab(st.id)}
-                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-all whitespace-nowrap ${
+                    className={`px-4 py-2 text-sm font-bold rounded-lg transition-all whitespace-nowrap flex items-center gap-2 ${
                       koleksiSubTab === st.id
                         ? "bg-[#ffbade] text-black shadow"
                         : "text-gray-400 hover:text-white"
                     }`}
                   >
+                    <FontAwesomeIcon icon={st.icon} />
                     {st.label}
                   </button>
                 ))}
@@ -1030,13 +1158,21 @@ export default function Profile() {
                       <div key={frame.id} className={`bg-[#201F31] p-4 rounded-2xl border ${isEquipped ? "border-[#ffbade] shadow-[0_0_15px_rgba(255,186,222,0.2)]" : "border-gray-800"} flex flex-col justify-between`}>
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-3xl">{frame.icon}</span>
+                            <div className="w-10 h-10 rounded-xl bg-[#161523] border border-gray-800 flex items-center justify-center">
+                              <FontAwesomeIcon icon={getItemIcon(frame).icon} className={`text-xl ${getItemIcon(frame).color}`} />
+                            </div>
                             {isEquipped ? (
-                              <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-[#ffbade] text-black">DIPAKAI ✅</span>
+                              <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-[#ffbade] text-black flex items-center gap-1">
+                                <FontAwesomeIcon icon={faCheck} className="text-xs" /> DIPAKAI
+                              </span>
                             ) : unlocked ? (
-                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">TERBUKA</span>
+                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30 flex items-center gap-1">
+                                <FontAwesomeIcon icon={faUnlock} className="text-xs" /> TERBUKA
+                              </span>
                             ) : (
-                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-gray-800 text-gray-400 border border-gray-700">TERKUNCI 🔒</span>
+                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1">
+                                <FontAwesomeIcon icon={faLock} className="text-xs" /> TERKUNCI
+                              </span>
                             )}
                           </div>
                           <h4 className="font-bold text-white text-md mb-1">{frame.name}</h4>
@@ -1076,13 +1212,21 @@ export default function Profile() {
                       <div key={t.id} className={`bg-[#201F31] p-4 rounded-2xl border ${isEquipped ? "border-[#ffbade] shadow-[0_0_15px_rgba(255,186,222,0.2)]" : "border-gray-800"} flex flex-col justify-between`}>
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <span className="text-3xl">{t.icon}</span>
+                            <div className="w-10 h-10 rounded-xl bg-[#161523] border border-gray-800 flex items-center justify-center">
+                              <FontAwesomeIcon icon={getItemIcon(t).icon} className={`text-xl ${getItemIcon(t).color}`} />
+                            </div>
                             {isEquipped ? (
-                              <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-[#ffbade] text-black">DIPAKAI ✅</span>
+                              <span className="px-2.5 py-1 text-[11px] font-black rounded-full bg-[#ffbade] text-black flex items-center gap-1">
+                                <FontAwesomeIcon icon={faCheck} className="text-xs" /> DIPAKAI
+                              </span>
                             ) : unlocked ? (
-                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">TERBUKA</span>
+                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-green-500/20 text-green-400 border border-green-500/30 flex items-center gap-1">
+                                <FontAwesomeIcon icon={faUnlock} className="text-xs" /> TERBUKA
+                              </span>
                             ) : (
-                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-gray-800 text-gray-400 border border-gray-700">TERKUNCI 🔒</span>
+                              <span className="px-2.5 py-1 text-[11px] font-bold rounded-full bg-gray-800 text-gray-400 border border-gray-700 flex items-center gap-1">
+                                <FontAwesomeIcon icon={faLock} className="text-xs" /> TERKUNCI
+                              </span>
                             )}
                           </div>
                           <h4 className="font-bold text-white text-md mb-1">{t.name}</h4>
@@ -1112,45 +1256,113 @@ export default function Profile() {
               )}
 
               {/* Sub Tab 3: Pencapaian */}
-              {koleksiSubTab === "pencapaian" && (
-                <div className="space-y-4">
-                  {ACHIEVEMENT_LIST.map(ach => {
-                    const currentProgress = stats ? (stats[ach.reqType] || 0) : 0;
-                    const progressPercent = Math.min(100, Math.floor((currentProgress / ach.target) * 100));
-                    const isDone = currentProgress >= ach.target;
+              {koleksiSubTab === "pencapaian" && (() => {
+                const totalAchievements = ACHIEVEMENT_LIST.length;
+                const completedAchievements = ACHIEVEMENT_LIST.filter(ach => {
+                  const val = stats ? (stats[ach.reqType] || 0) : 0;
+                  return val >= ach.target;
+                }).length;
+                const completedPercent = Math.round((completedAchievements / totalAchievements) * 100) || 0;
 
-                    return (
-                      <div key={ach.id} className="bg-[#201F31] p-5 rounded-2xl border border-gray-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-1">
-                            <span className="text-2xl">{isDone ? "🏆" : "🎯"}</span>
-                            <div>
-                              <h4 className="font-bold text-white text-base">{ach.title}</h4>
-                              <p className="text-xs text-gray-400">{ach.desc}</p>
+                const filteredAchievements = ACHIEVEMENT_LIST.filter(ach => {
+                  if (achCategory === "all") return true;
+                  return ach.category === achCategory;
+                });
+
+                return (
+                  <div className="space-y-5">
+                    {/* Summary Header Badge */}
+                    <div className="bg-[#161523] p-4 rounded-2xl border border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                      <div>
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          <FontAwesomeIcon icon={faTrophy} className="text-yellow-400" /> Progress Pencapaian Pengguna
+                        </h4>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          Terbuka <strong className="text-[#ffbade]">{completedAchievements}</strong> dari {totalAchievements} Pencapaian ({completedPercent}%)
+                        </p>
+                      </div>
+                      <div className="w-full sm:w-48 bg-gray-800 h-3 rounded-full overflow-hidden border border-gray-700">
+                        <div 
+                          className="bg-gradient-to-r from-[#ffbade] to-green-400 h-full transition-all duration-500" 
+                          style={{ width: `${completedPercent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Filter Category Tabs */}
+                    <div className="flex gap-2 overflow-x-auto custom-scrollbar pb-1">
+                      {[
+                        { id: "all", label: "Semua", icon: faStar },
+                        { id: "watch", label: "Nonton", icon: faFilm },
+                        { id: "read", label: "Komik", icon: faBookOpen },
+                        { id: "comment", label: "Chat & Komentar", icon: faComments },
+                        { id: "social", label: "Sosial & Favorit", icon: faThumbsUp }
+                      ].map(cat => (
+                        <button
+                          key={cat.id}
+                          onClick={() => setAchCategory(cat.id)}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap border flex items-center gap-1.5 ${
+                            achCategory === cat.id
+                              ? "bg-[#ffbade] text-black border-[#ffbade] shadow-sm"
+                              : "bg-[#161523] text-gray-400 hover:text-white border-gray-800"
+                          }`}
+                        >
+                          <FontAwesomeIcon icon={cat.icon} />
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Achievement List */}
+                    <div className="space-y-3">
+                      {filteredAchievements.map(ach => {
+                        const currentProgress = stats ? (stats[ach.reqType] || 0) : 0;
+                        const progressPercent = Math.min(100, Math.floor((currentProgress / ach.target) * 100));
+                        const isDone = currentProgress >= ach.target;
+
+                        return (
+                          <div key={ach.id} className="bg-[#201F31] p-4 sm:p-5 rounded-2xl border border-gray-800/90 hover:border-[#ffbade]/30 transition-all flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                            <div className="flex-1 w-full">
+                              <div className="flex items-center gap-3 mb-1">
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${isDone ? "bg-amber-500/20 text-amber-400 border-amber-500/30 shadow-sm" : "bg-[#161523] text-gray-500 border-gray-800"}`}>
+                                  <FontAwesomeIcon icon={isDone ? faTrophy : faBullseye} className="text-base" />
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-white text-base">{ach.title}</h4>
+                                  <p className="text-xs text-gray-400">{ach.desc}</p>
+                                </div>
+                              </div>
+                              <div className="mt-3 w-full bg-gray-800 h-2.5 rounded-full overflow-hidden">
+                                <div className="bg-gradient-to-r from-[#ffbade] to-green-400 h-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
+                              </div>
+                              <div className="flex justify-between items-center mt-1.5">
+                                <p className="text-[11px] text-gray-400 font-semibold">{currentProgress} / {ach.target} ({progressPercent}%)</p>
+                                {ach.rewardTitle && (
+                                  <span className="text-[10px] text-[#ffbade] font-bold bg-[#ffbade]/10 px-2 py-0.5 rounded border border-[#ffbade]/20">
+                                    Hadiah Gelar: {ach.rewardTitle}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="self-end md:self-center">
+                              {isDone ? (
+                                <span className="px-3.5 py-1.5 rounded-xl bg-green-500/20 text-green-400 font-bold text-xs border border-green-500/30 flex items-center gap-1.5">
+                                  <FontAwesomeIcon icon={faCheckCircle} /> SELESAI
+                                </span>
+                              ) : (
+                                <span className="px-3.5 py-1.5 rounded-xl bg-gray-800 text-gray-400 font-semibold text-xs border border-gray-700">
+                                  DALAM PROSES
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <div className="mt-3 w-full bg-gray-800 h-2.5 rounded-full overflow-hidden">
-                            <div className="bg-gradient-to-r from-[#ffbade] to-green-400 h-full transition-all duration-300" style={{ width: `${progressPercent}%` }}></div>
-                          </div>
-                          <p className="text-[11px] text-gray-400 mt-1 font-semibold">{currentProgress} / {ach.target} ({progressPercent}%)</p>
-                        </div>
-
-                        <div>
-                          {isDone ? (
-                            <span className="px-4 py-2 rounded-xl bg-green-500/20 text-green-400 font-bold text-xs border border-green-500/30 flex items-center gap-1.5">
-                              ✅ SELESAI
-                            </span>
-                          ) : (
-                            <span className="px-4 py-2 rounded-xl bg-gray-800 text-gray-400 font-semibold text-xs border border-gray-700">
-                              DALAM PROSES
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -1257,13 +1469,35 @@ export default function Profile() {
             ) : (
               <div className="space-y-3 max-h-[350px] overflow-y-auto custom-scrollbar pr-1">
                 {xpLogsList.map((log) => {
-                  let icon = "⭐";
+                  let faIconObj = faStar;
+                  let iconColor = "text-yellow-400";
                   let label = "Aktivitas";
-                  if (log.action_type === "comment") { icon = "💬"; label = "Comments & Replies"; }
-                  else if (log.action_type === "watch_episode") { icon = "🎬"; label = "Episodes Watched"; }
-                  else if (log.action_type === "read_chapter") { icon = "📖"; label = "Chapters Read"; }
-                  else if (log.action_type === "like") { icon = "👍"; label = "Likes Given"; }
-                  else if (log.action_type === "bookmark") { icon = "📌"; label = "Bookmarks / Favorit"; }
+
+                  if (log.action_type === "comment") { 
+                    faIconObj = faComments; 
+                    iconColor = "text-indigo-400"; 
+                    label = "Komentar & Balasan"; 
+                  } else if (log.action_type === "watch_episode") { 
+                    faIconObj = faFilm; 
+                    iconColor = "text-[#ffbade]"; 
+                    label = "Episode Ditonton"; 
+                  } else if (log.action_type === "read_chapter") { 
+                    faIconObj = faBookOpen; 
+                    iconColor = "text-emerald-400"; 
+                    label = "Chapter Komik Dibaca"; 
+                  } else if (log.action_type === "like") { 
+                    faIconObj = faThumbsUp; 
+                    iconColor = "text-rose-400"; 
+                    label = "Like Komentar"; 
+                  } else if (log.action_type === "bookmark") { 
+                    faIconObj = faBookmark; 
+                    iconColor = "text-amber-400"; 
+                    label = "Bookmarks / Watchlist"; 
+                  } else if (log.action_type === "live_chat") { 
+                    faIconObj = faCommentDots; 
+                    iconColor = "text-cyan-400"; 
+                    label = "Pesan Live Chat"; 
+                  }
 
                   return (
                     <div
@@ -1271,7 +1505,9 @@ export default function Profile() {
                       className="flex items-center justify-between p-3.5 bg-[#201F31]/80 rounded-2xl border border-gray-800/80 hover:border-[#ffbade]/30 transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl">{icon}</span>
+                        <div className="w-10 h-10 rounded-xl bg-[#161523] border border-gray-800 flex items-center justify-center">
+                          <FontAwesomeIcon icon={faIconObj} className={`text-lg ${iconColor}`} />
+                        </div>
                         <div>
                           <p className="text-sm font-bold text-gray-100">{label}</p>
                           <p className="text-[11px] text-gray-400">

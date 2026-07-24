@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle, faVideo, faEllipsisV } from "@fortawesome/free-solid-svg-icons";
+import { faComments, faTimes, faPaperPlane, faSmile, faReply, faCircle, faVideo, faEllipsisV, faCrown, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { useToast } from "../../context/ToastContext";
 import EmojiPicker from "emoji-picker-react";
 import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp, formatWhatsAppDate } from "../../utils/xp.utils";
+import UserProfileModal from "../profile/UserProfileModal";
 
 export default function LiveChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,6 +21,15 @@ export default function LiveChatWidget() {
   const [showVideoBg, setShowVideoBg] = useState(true);
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+
+  const [selectedUsername, setSelectedUsername] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  const handleOpenUserProfile = (username) => {
+    if (!username) return;
+    setSelectedUsername(username);
+    setIsProfileModalOpen(true);
+  };
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -301,10 +311,10 @@ export default function LiveChatWidget() {
                     className={`flex items-start gap-2.5 ${isMe ? "flex-row-reverse" : "flex-row"} group relative z-10`}
                   >
                     {/* Avatar with Crown on top & VIP badge below */}
-                    <div className="relative shrink-0 self-start mt-1">
+                    <button type="button" onClick={() => !isAnon && handleOpenUserProfile(msg.profiles?.username)} className="relative shrink-0 self-start mt-1 cursor-pointer group">
                       {msg.profiles?.is_vip && (
-                        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-xs z-10 drop-shadow">
-                          👑
+                        <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-xs z-20 vip-crown-glow">
+                          <FontAwesomeIcon icon={faCrown} className="text-yellow-400" />
                         </span>
                       )}
                       <img
@@ -313,23 +323,23 @@ export default function LiveChatWidget() {
                           "https://i.pinimg.com/736x/c0/27/be/c027bec07c2dc08b9df60921dfd539bd.jpg"
                         }
                         alt="Avatar"
-                        className={`w-8 h-8 rounded-full object-cover bg-[#201F31] ${frameClass}`}
+                        className={`w-8 h-8 rounded-full object-cover bg-[#201F31] ${frameClass} group-hover:scale-105 transition-transform`}
                       />
                       {msg.profiles?.is_vip && (
                         <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1 py-0.2 text-[7px] font-black rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white border border-purple-400 shadow-md">
                           VIP
                         </span>
                       )}
-                    </div>
+                    </button>
 
                     <div className="flex flex-col max-w-[78%] min-w-[50%]">
                       {/* Info Pengirim: Sisi Kategori (2 Baris Nama & Title dekat Avatar, 1 Baris Waktu & Titik 3 di Pojok Lawan) */}
                       <div className={`flex items-start justify-between w-full mb-1 gap-2 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
                         {/* Sisi Dekat Foto Profil - 2 Baris: Nama & Title */}
                         <div className={`flex flex-col overflow-hidden ${isMe ? "items-end text-right" : "items-start text-left"}`}>
-                          <span className="text-xs font-bold truncate" style={{ color: meta?.nameColor || "#cccccc" }}>
+                          <button type="button" onClick={() => !isAnon && handleOpenUserProfile(msg.profiles?.username)} className="text-xs font-bold truncate hover:underline text-left" style={{ color: meta?.nameColor || "#cccccc" }}>
                             {isAnon ? "Anonim" : msg.profiles?.display_name || msg.profiles?.username || "Anime Fan"}
-                          </span>
+                          </button>
                           {!isAnon && meta && (
                             <span className="text-[9px] font-bold text-[#ffbade] truncate">
                               Lv.{meta.level} • {meta.title}
@@ -360,7 +370,7 @@ export default function LiveChatWidget() {
                                     onClick={() => { setDeleteConfirmId(msg.id); setActiveMenuId(null); }}
                                     className="w-full text-left px-3 py-1.5 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-1.5 text-[11px]"
                                   >
-                                    🗑️ Hapus
+                                    <FontAwesomeIcon icon={faTrash} /> Hapus
                                   </button>
                                 </div>
                               )}
@@ -476,6 +486,12 @@ export default function LiveChatWidget() {
           </div>
         </div>
       )}
+      {/* User Profile Preview Modal */}
+      <UserProfileModal 
+        username={selectedUsername}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 }

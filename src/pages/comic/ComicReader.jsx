@@ -4,7 +4,7 @@ import Loader from '../../components/Loader/Loader';
 import Error from '../../components/error/Error';
 import CommentComic from "../../components/commentcomic/CommentComic";
 import { supabase } from "@/src/lib/supabaseClient";
-import { addXpAndCheckLevelUp } from "../../utils/xp.utils";
+import { addXpAndCheckLevelUp, trimWatchHistory } from "../../utils/xp.utils";
 
 function ComicReader() {
   const { chapterId } = useParams();
@@ -127,6 +127,7 @@ function ComicReader() {
 
             // Tambah XP +5 untuk chapter komik yang dibaca
             addXpAndCheckLevelUp(session.user.id, "read_chapter", 5, chapterId);
+            trimWatchHistory(session.user.id, 20);
           }
         } catch (err) {}
 

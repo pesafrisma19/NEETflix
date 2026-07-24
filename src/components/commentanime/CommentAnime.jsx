@@ -8,8 +8,9 @@ import BouncingLoader from "@/src/components/ui/bouncingloader/Bouncingloader";
 import AuthModal from "@/src/components/auth/AuthModal";
 import { useToast } from "@/src/context/ToastContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEllipsisV } from "@fortawesome/free-solid-svg-icons";
+import { faEllipsisV, faCrown, faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { getRankTitle, getAvatarFrameClass, addXpAndCheckLevelUp, formatWhatsAppDate } from "@/src/utils/xp.utils";
+import UserProfileModal from "@/src/components/profile/UserProfileModal";
 
 export default function CommentAnime({ targetId, episodeTitle }) {
   const { addToast } = useToast();
@@ -27,6 +28,15 @@ export default function CommentAnime({ targetId, episodeTitle }) {
   const [activeMenuId, setActiveMenuId] = useState(null);
   const [editingCommentId, setEditingCommentId] = useState(null);
   const [editContent, setEditContent] = useState("");
+  
+  const [selectedUsername, setSelectedUsername] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  const handleOpenUserProfile = (username) => {
+    if (!username) return;
+    setSelectedUsername(username);
+    setIsProfileModalOpen(true);
+  };
   const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
   useEffect(() => {
@@ -257,28 +267,28 @@ export default function CommentAnime({ targetId, episodeTitle }) {
     return (
       <div key={comment.id} className={`flex gap-x-3.5 ${isReply ? 'ml-10 mt-4' : 'mt-6'}`}>
         {/* Avatar with VIP Crown on top & VIP badge below */}
-        <Link to={`/user/${comment.profiles?.username}`} className="relative shrink-0 self-start mt-1">
+        <button type="button" onClick={() => handleOpenUserProfile(comment.profiles?.username)} className="relative shrink-0 self-start mt-1 cursor-pointer group">
           {comment.profiles?.is_vip && (
-            <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-sm z-10 drop-shadow">
-              👑
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 text-xs z-20 vip-crown-glow">
+              <FontAwesomeIcon icon={faCrown} className="text-yellow-400" />
             </span>
           )}
-          <img src={avatarUrl} alt="avatar" className={`w-10 h-10 rounded-full object-cover ${frameClass}`} />
+          <img src={avatarUrl} alt="avatar" className={`w-10 h-10 rounded-full object-cover ${frameClass} group-hover:scale-105 transition-transform`} />
           {comment.profiles?.is_vip && (
             <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 px-1.5 py-0.2 text-[8px] font-black rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white border border-purple-400 shadow-md">
               VIP
             </span>
           )}
-        </Link>
+        </button>
 
         <div className="flex flex-col w-full text-left">
           {/* Header Row: Left Column (2 Baris: Nama & Level), Right Column (1 Baris: Waktu + Titik 3) */}
           <div className="flex items-start justify-between w-full mb-1">
             {/* Sisi Kiri (Dekat Foto Profil) - 2 Baris */}
             <div className="flex flex-col text-left overflow-hidden">
-              <Link to={`/user/${comment.profiles?.username}`} className="font-bold text-white hover:text-[#ffbade] transition-colors text-sm truncate">
+              <button type="button" onClick={() => handleOpenUserProfile(comment.profiles?.username)} className="font-bold text-white hover:text-[#ffbade] transition-colors text-sm truncate text-left">
                 {authorName}
-              </Link>
+              </button>
               <span className="text-[11px] text-gray-400">
                 Lvl {authorLevel} • {rankTitle}
               </span>
@@ -307,13 +317,13 @@ export default function CommentAnime({ targetId, episodeTitle }) {
                         onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); setActiveMenuId(null); }}
                         className="w-full text-left px-3 py-2 text-gray-300 hover:bg-[#ffbade]/20 hover:text-[#ffbade] font-semibold flex items-center gap-2"
                       >
-                        ✏️ Edit
+                        <FontAwesomeIcon icon={faEdit} /> Edit
                       </button>
                       <button 
                         onClick={() => { setDeleteConfirmId(comment.id); setActiveMenuId(null); }}
                         className="w-full text-left px-3 py-2 text-red-400 hover:bg-red-500/20 font-semibold flex items-center gap-2"
                       >
-                        🗑️ Hapus
+                        <FontAwesomeIcon icon={faTrash} /> Hapus
                       </button>
                     </div>
                   )}
@@ -539,6 +549,12 @@ export default function CommentAnime({ targetId, episodeTitle }) {
           </div>
         </div>
       )}
+      {/* User Profile Preview Modal */}
+      <UserProfileModal 
+        username={selectedUsername}
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+      />
     </div>
   );
 }
